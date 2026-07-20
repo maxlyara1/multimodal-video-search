@@ -1,5 +1,5 @@
 project:
-  name: video-rag-research
+  name: multimodal-video-search
 
 data:
   materials_dir: ./lera_materials
@@ -82,7 +82,6 @@ search:
     asr: 1.0
     ocr: 0.8
     visual: 0.7
-    det: 0.7
 
 answering:
   enabled: true

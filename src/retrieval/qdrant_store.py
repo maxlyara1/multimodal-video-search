@@ -9,7 +9,6 @@ from qdrant_client import QdrantClient, models
 
 from src.models import ModalityRecord, SearchHit
 
-
 _POINT_ID_NAMESPACE = uuid.UUID("3f4e14a9-527f-4e33-9f3d-e5c8e4ce5d5f")
 
 

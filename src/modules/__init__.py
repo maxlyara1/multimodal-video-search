@@ -1,6 +1,6 @@
 from .asr import WhisperASRExtractor
-from .visual import VisualCaptionExtractor
 from .ocr import EasyOCROnScreenExtractor
+from .visual import VisualCaptionExtractor
 
 __all__ = [
     "WhisperASRExtractor",

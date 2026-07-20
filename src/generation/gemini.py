@@ -355,7 +355,7 @@ class GeminiAnswerGenerator:
 
         return genai_types.Part(
             file_data=genai_types.FileData(
-                file_uri=getattr(uploaded, "uri"),
+                file_uri=uploaded.uri,
                 mime_type=mime_type,
             ),
             video_metadata=genai_types.VideoMetadata(**video_metadata_kwargs),
@@ -374,7 +374,7 @@ class GeminiAnswerGenerator:
                 raise RuntimeError(f"Gemini file processing failed for {getattr(current, 'name', '<unknown>')}")
             time.sleep(poll_sec)
             with suppress(Exception):
-                current = client.files.get(name=getattr(current, "name"))
+                current = client.files.get(name=current.name)
         raise TimeoutError(f"Gemini file processing timeout for {getattr(uploaded, 'name', '<unknown>')}")
 
     def _cleanup_uploaded_files(self, client: Any, uploaded_files: list[Any]) -> None:

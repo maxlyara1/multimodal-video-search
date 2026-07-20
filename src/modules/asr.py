@@ -1,12 +1,11 @@
 from __future__ import annotations
 
 import logging
-import os
 import subprocess
 import tempfile
 import wave
-from pathlib import Path
 from concurrent.futures import ProcessPoolExecutor
+from pathlib import Path
 
 import whisper
 
@@ -33,7 +32,7 @@ def _transcribe_chunk(
     global _worker_model
     if _worker_model is None:
         raise RuntimeError("Whisper model is not initialized in worker process")
-        
+
     raw = _worker_model.transcribe(
         str(chunk_path),
         verbose=False,
@@ -43,7 +42,7 @@ def _transcribe_chunk(
         no_speech_threshold=no_speech_threshold,
         initial_prompt=initial_prompt,
     )
-    
+
     segments = []
     for segment in raw.get("segments", []):
         segments.append({
@@ -100,7 +99,7 @@ class WhisperASRExtractor:
                 return self._extract_parallel(video_path)
             except Exception as e:
                 logger.warning(
-                    "Ошибка при параллельной транскрипции ASR: %s. Переходим на последовательный режим.", 
+                    "Ошибка при параллельной транскрипции ASR: %s. Переходим на последовательный режим.",
                     e, exc_info=True
                 )
         return self._extract_sequential(video_path)
@@ -142,11 +141,11 @@ class WhisperASRExtractor:
 
     def _extract_parallel(self, video_path: str | Path) -> list[ModalityRecord]:
         video_path = Path(video_path).resolve()
-        
+
         with tempfile.TemporaryDirectory() as tmp_dir:
             tmp_path = Path(tmp_dir)
             full_audio_path = tmp_path / "extracted_audio.wav"
-            
+
             # 1. Extract audio from video
             logger.info("  [ASR Parallel] Извлечение аудио из %s...", video_path.name)
             cmd = [
@@ -155,15 +154,15 @@ class WhisperASRExtractor:
                 str(full_audio_path)
             ]
             subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
-            
+
             # 2. Read wav duration
             with wave.open(str(full_audio_path), "rb") as w:
                 frames = w.getnframes()
                 rate = w.getframerate()
                 duration = frames / float(rate)
-                
+
             logger.info("  [ASR Parallel] Длительность аудиодорожки: %.2fс", duration)
-            
+
             # 3. Slice audio into chunks
             chunk_size = duration / self.workers
             chunks = []
@@ -171,43 +170,43 @@ class WhisperASRExtractor:
                 start = i * chunk_size
                 end = min(duration, (i + 1) * chunk_size)
                 chunk_file = tmp_path / f"chunk_{i}.wav"
-                
+
                 slice_cmd = [
                     "ffmpeg", "-y", "-ss", f"{start:.3f}", "-to", f"{end:.3f}",
                     "-i", str(full_audio_path), str(chunk_file)
                 ]
                 subprocess.run(slice_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
                 chunks.append((chunk_file, start))
-                
+
             logger.info("  [ASR Parallel] Нарезка на %d частей выполнена.", self.workers)
-            
+
             # 4. Transcribe chunks concurrently
             logger.info("  [ASR Parallel] Запуск пула процессов (%d воркеров)...", self.workers)
             all_segments = []
             with ProcessPoolExecutor(
-                max_workers=self.workers, 
-                initializer=_init_worker, 
+                max_workers=self.workers,
+                initializer=_init_worker,
                 initargs=(self.model_name, self.device)
             ) as executor:
                 futures = []
                 for chunk_file, offset in chunks:
                     futures.append(
                         executor.submit(
-                            _transcribe_chunk, 
-                            chunk_file, 
-                            self.language, 
-                            self.no_speech_threshold, 
-                            self.initial_prompt, 
+                            _transcribe_chunk,
+                            chunk_file,
+                            self.language,
+                            self.no_speech_threshold,
+                            self.initial_prompt,
                             offset
                         )
                     )
-                
+
                 for fut in futures:
                     all_segments.extend(fut.result())
-                    
+
             # 5. Sort segments chronologically
             all_segments.sort(key=lambda s: s["start"])
-            
+
             # 6. Map to ModalityRecords
             records = []
             for seg in all_segments:
@@ -227,7 +226,7 @@ class WhisperASRExtractor:
                         },
                     )
                 )
-            
+
             logger.info("  [ASR Parallel] Обработка завершена. Объединено %d реплик.", len(records))
             return records
 

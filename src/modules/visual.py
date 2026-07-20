@@ -11,9 +11,9 @@ from transformers import BlipForConditionalGeneration, BlipProcessor
 
 from src.models import ModalityRecord
 from src.runtime import cleanup_torch_memory, detect_torch_device, resolve_torch_dtype
+from src.utils.telemetry import ProgressTelemetry
 from src.utils.video_frames import RobustVideoFrameSampler
 from src.utils.video_metadata import probe_video_duration
-from src.utils.telemetry import ProgressTelemetry
 
 logger = logging.getLogger(__name__)
 
@@ -172,6 +172,16 @@ class VisualCaptionExtractor:
                     for rel in relations
                 ],
             }
+            results.append(
+                ModalityRecord(
+                    video_file=str(video_path),
+                    modality="visual",
+                    start=round(frame.timestamp, 3),
+                    end=round(min(duration, frame.timestamp + self.frame_step_sec), 3),
+                    text=caption,
+                    metadata={**base_metadata, "visual_evidence_type": "caption"},
+                )
+            )
             for visual_evidence_type, text in auxiliary_texts.items():
                 results.append(
                     ModalityRecord(

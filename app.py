@@ -3,15 +3,15 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-import shutil
 import time
 import uuid
 from contextlib import asynccontextmanager
 from pathlib import Path
-from fastapi import FastAPI, HTTPException, UploadFile, File
+
+from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, StreamingResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from src.pipeline import VideoRAGPipeline
@@ -25,6 +25,7 @@ async def lifespan(app: FastAPI):
     global pipeline
     logger.info("Initializing Video RAG Pipeline...")
     import os
+
     from dotenv import load_dotenv
     load_dotenv()
     if not os.getenv("GOOGLE_API_KEYS") and not os.getenv("GOOGLE_API_KEY"):
@@ -78,10 +79,10 @@ async def ask_query(request: QueryRequest):
     global pipeline
     if not pipeline:
         raise HTTPException(status_code=500, detail="Pipeline is not initialized")
-    
+
     if not request.query.strip():
         raise HTTPException(status_code=400, detail="Query cannot be empty")
-        
+
     try:
         logger.info(f"Processing query: {request.query} on collection: {request.collection_prefix}")
         try:
@@ -96,7 +97,7 @@ async def ask_query(request: QueryRequest):
             answer = "Внимание: Генерация текстового ответа недоступна (требуется настроить GOOGLE_API_KEY в файле .env). Ниже представлены результаты поиска по локальной векторной базе Qdrant."
             model_name = "fallback-search-only"
             key_index = None
-        
+
         # Serialize candidates for JSON response
         serialized_candidates = []
         for c in candidates:
@@ -109,10 +110,10 @@ async def ask_query(request: QueryRequest):
                     "score": h.score,
                     "text": h.text
                 })
-            
+
             # Format filename to be shorter/pretty
             video_filename = Path(c.video_file).name
-            
+
             serialized_candidates.append({
                 "video_file": video_filename,
                 "start": c.start,
@@ -120,7 +121,7 @@ async def ask_query(request: QueryRequest):
                 "score": c.score,
                 "hits": serialized_hits
             })
-            
+
         return {
             "query": request.query,
             "answer": answer,
@@ -152,31 +153,31 @@ async def upload_videos(files: list[UploadFile] = File(...)):
     global pipeline
     if not pipeline:
         raise HTTPException(status_code=500, detail="Pipeline is not initialized")
-        
+
     if not files:
         raise HTTPException(status_code=400, detail="No files uploaded")
-        
+
     try:
         session_id = str(uuid.uuid4())
         videos_dir = Path("data/videos")
         videos_dir.mkdir(parents=True, exist_ok=True)
-        
+
         saved_paths = []
         new_metadata = []
-        
+
         # Лимит размера файла (500 MB)
         MAX_FILE_SIZE = 500 * 1024 * 1024
-        
+
         for file in files:
             ext = Path(file.filename).suffix.lower()
             if ext not in {".mp4", ".avi", ".mkv", ".mov"}:
                 raise HTTPException(status_code=400, detail=f"Unsupported file format: {ext}. Only MP4, AVI, MKV, MOV are allowed.")
-                
+
             upload_id = str(uuid.uuid4())[:8]
             safe_name = "".join(c if c.isalnum() or c in (".", "_", "-") else "_" for c in file.filename)
             filename = f"upload_{upload_id}_{safe_name}"
             dest_path = videos_dir / filename
-            
+
             # Считываем кусками для контроля размера
             size = 0
             with open(dest_path, "wb") as buffer:
@@ -187,29 +188,29 @@ async def upload_videos(files: list[UploadFile] = File(...)):
                         dest_path.unlink(missing_ok=True)
                         raise HTTPException(status_code=413, detail="File too large. Maximum size is 500 MB.")
                     buffer.write(chunk)
-                
+
             saved_paths.append(dest_path)
-            
+
             new_metadata.append({
                 "filename": filename,
                 "original_name": file.filename,
                 "size_bytes": size,
                 "timestamp": time.time()
             })
-            
+
         active_sessions[session_id] = {
             "paths": saved_paths,
             "metadata": new_metadata
         }
-        
+
         logger.info(f"Saved {len(saved_paths)} uploaded video files for session {session_id}. Ready for streaming.")
-        
+
         return {
             "status": "uploaded",
             "session_id": session_id,
             "videos": new_metadata
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -221,25 +222,25 @@ async def upload_events(session_id: str):
     global pipeline
     if not pipeline:
         raise HTTPException(status_code=500, detail="Pipeline is not initialized")
-        
+
     session = active_sessions.get(session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
-        
+
     async def event_generator():
         try:
             saved_paths = session["paths"]
             metadata = session["metadata"]
-            
+
             # Start the extraction and indexing stream generator
             generator = pipeline.index_uploaded_videos_generator(
                 saved_paths, prefix="uploaded_videos", recreate=False
             )
-            
+
             for event in generator:
                 yield f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
                 await asyncio.sleep(0.05)
-                
+
             # Persist custom metadata once indexing succeeds by appending to existing list
             existing_metadata = load_uploaded_metadata()
             existing_filenames = {item["filename"] for item in existing_metadata}
@@ -247,16 +248,16 @@ async def upload_events(session_id: str):
                 if item["filename"] not in existing_filenames:
                     existing_metadata.append(item)
             save_uploaded_metadata(existing_metadata)
-            
+
             yield f"data: {json.dumps({'step': 'done', 'status': 'success'}, ensure_ascii=False)}\n\n"
-            
+
         except Exception as e:
             logger.error(f"Error inside index streaming generator: {e}", exc_info=True)
             yield f"data: {json.dumps({'step': 'error', 'status': 'failed', 'message': 'Indexing process failed'}, ensure_ascii=False)}\n\n"
         finally:
             active_sessions.pop(session_id, None)
             logger.info(f"Session {session_id} removed from active_sessions.")
-            
+
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 
 @app.post("/api/clear-uploads")
@@ -264,32 +265,32 @@ async def clear_uploads():
     global pipeline
     if not pipeline:
         raise HTTPException(status_code=500, detail="Pipeline is not initialized")
-        
+
     try:
         metadata = load_uploaded_metadata()
         videos_dir = Path("data/videos")
         artifacts_dir = Path("data/artifacts")
-        
+
         for item in metadata:
             filename = item["filename"]
             video_file = videos_dir / filename
             if video_file.exists():
                 video_file.unlink()
-                
+
             artifact_file = artifacts_dir / f"{video_file.stem}.json"
             if artifact_file.exists():
                 artifact_file.unlink()
-                
+
         store = pipeline._get_store()
         for modality in pipeline.enabled_modalities():
             store.recreate_collection(modality, prefix="uploaded_videos")
-            
+
         if METADATA_FILE.exists():
             METADATA_FILE.unlink()
-            
+
         logger.info("Custom uploaded videos and index cleared successfully!")
         return {"status": "success", "message": "Custom index and uploads cleared."}
-        
+
     except Exception as e:
         logger.error(f"Error clearing uploads: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to clear uploaded video index and files.")
@@ -308,7 +309,7 @@ async def read_index():
     index_path = static_dir / "index.html"
     if not index_path.exists():
         raise HTTPException(status_code=404, detail="index.html not found in static folder")
-    
+
     # Force browser to always fetch the fresh version, bypassing local cache
     headers = {
         "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",

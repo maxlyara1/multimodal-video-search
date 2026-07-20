@@ -2,9 +2,8 @@
 from __future__ import annotations
 
 import logging
-import warnings
-
 import sys
+import warnings
 
 _LOG_FORMAT = "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
 _CONFIGURED = False
@@ -26,7 +25,7 @@ def configure_logging(level: int = logging.INFO) -> None:
 
     root = logging.getLogger()
     root.setLevel(level)
-    
+
     # Remove existing handlers to avoid duplicates
     for h in list(root.handlers):
         root.removeHandler(h)

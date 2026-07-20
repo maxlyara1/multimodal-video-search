@@ -79,16 +79,25 @@ def run_evaluation(pipeline: VideoRAGPipeline, mode: str, fusion_method: str, ta
 
         t_start = time.perf_counter()
 
-        # Step 1: Query Decomposition (Gemini)
-        try:
-            query_decoupler = pipeline._get_query_decoupler()
-            if query_decoupler is not None:
-                decomposition = query_decoupler.decouple(query)
-            else:
+        # Step 1: Query Decomposition (Gemini or offline tasks.json)
+        if "decomposition" in task and task["decomposition"] is not None:
+            decomp_data = task["decomposition"]
+            decomposition = QueryDecomposition(
+                original_query=query,
+                asr_query=decomp_data.get("asr_query"),
+                visual_queries=decomp_data.get("visual_queries") or [],
+                visual_mode=decomp_data.get("visual_mode") or "all"
+            )
+        else:
+            try:
+                query_decoupler = pipeline._get_query_decoupler()
+                if query_decoupler is not None:
+                    decomposition = query_decoupler.decouple(query)
+                else:
+                    decomposition = QueryDecomposition(original_query=query, asr_query=query, visual_queries=[], visual_mode="all")
+            except Exception as e:
+                print(f"Warning: Gemini decoupler failed ({e}). Using default decomposition.")
                 decomposition = QueryDecomposition(original_query=query, asr_query=query, visual_queries=[], visual_mode="all")
-        except Exception as e:
-            print(f"Warning: Gemini decoupler failed ({e}). Using default decomposition.")
-            decomposition = QueryDecomposition(original_query=query, asr_query=query, visual_queries=[], visual_mode="all")
 
         # Step 2: Retrieve vectors
         t_qdrant_start = time.perf_counter()
@@ -120,9 +129,6 @@ def run_evaluation(pipeline: VideoRAGPipeline, mode: str, fusion_method: str, ta
             all_hits.extend(hits)
 
         candidates = pipeline._merge_hits(all_hits)
-        final_top_k = pipeline.cfg["search"].get("final_top_k", 5)
-        candidates.sort(key=lambda item: item.score, reverse=True)
-        candidates = candidates[:final_top_k]
 
         t_qdrant = time.perf_counter() - t_qdrant_start
         t_total = time.perf_counter() - t_start
@@ -130,14 +136,23 @@ def run_evaluation(pipeline: VideoRAGPipeline, mode: str, fusion_method: str, ta
         total_latency += t_total
         total_qdrant_latency += t_qdrant
 
-        # Deduplicate candidates to get correct Hit@K on video file level
-        seen = set()
-        top_videos = []
+        # Deduplicate candidates to get correct Hit@K on video file level by grouping and selecting max score
+        video_scores = {}
         for c in candidates:
-            video_name = Path(c.video_file).stem.lower()
-            if video_name not in seen:
-                seen.add(video_name)
-                top_videos.append(video_name)
+            video_id = Path(c.video_file).stem.lower()
+            video_scores[video_id] = max(
+                video_scores.get(video_id, float("-inf")),
+                c.score,
+            )
+
+        top_videos = [
+            video_id
+            for video_id, _ in sorted(
+                video_scores.items(),
+                key=lambda item: item[1],
+                reverse=True,
+            )
+        ]
 
         # Precise matching on expected_video ID instead of weak substring matching
         is_top1 = len(top_videos) > 0 and top_videos[0] == expected
@@ -206,7 +221,7 @@ def main() -> None:
 
     # 2. Run Evaluations across modalities and fusion strategies
     print("\nStarting benchmarks...")
-    
+
     # Run 1: ASR-only
     pipeline = VideoRAGPipeline(args.config)
     try:
@@ -270,7 +285,7 @@ def main() -> None:
 
         for cat in ["speech", "ocr", "visual"]:
             cnt = asr_metrics["category_stats"][cat]["total"]
-            
+
             def get_hit1(m):
                 s = m["category_stats"][cat]
                 return s["top1"] / s["total"] if s["total"] > 0 else 0.0
@@ -287,7 +302,7 @@ def main() -> None:
             q = tasks[i]["query"]
             cat = tasks[i]["category"]
             exp = tasks[i]["expected_video"]
-            
+
             def get_top1(m):
                 res = m["results"][i]["top_found"]
                 return f"`{res[0]}`" if res else "`None`"

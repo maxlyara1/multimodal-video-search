@@ -4,13 +4,12 @@ import logging
 import resource
 import sys
 import time
-from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
 
 import threading
-from typing import Callable, Any
+from typing import Any, Callable
 
 _telemetry_lock = threading.Lock()
 _telemetry_listeners: list[Callable[..., Any]] = []

@@ -4,7 +4,6 @@ from pathlib import Path
 
 import cv2
 
-
 VIDEO_EXTENSIONS = {".mp4", ".webm", ".mov", ".mkv", ".avi", ".m4v"}
 
 

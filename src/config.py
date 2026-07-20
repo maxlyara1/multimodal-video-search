@@ -8,7 +8,6 @@ from typing import Any
 import yaml
 from dotenv import load_dotenv
 
-
 _DEFAULT_CONFIG_PATH = Path(__file__).resolve().parent.parent / "configs" / "config.yaml"
 
 

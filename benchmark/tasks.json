@@ -2,51 +2,101 @@
   {
     "query": "Где говорят про роблокс?",
     "expected_video": "roblox",
-    "category": "speech"
+    "category": "speech",
+    "decomposition": {
+      "asr_query": "роблокс",
+      "visual_queries": [],
+      "visual_mode": "all"
+    }
   },
   {
     "query": "Рецепт итальянской пасты карбонара с панчеттой и желтками",
     "expected_video": "carbonara",
-    "category": "speech"
+    "category": "speech",
+    "decomposition": {
+      "asr_query": "рецепт итальянской пасты карбонара с панчеттой и желтками",
+      "visual_queries": [],
+      "visual_mode": "all"
+    }
   },
   {
     "query": "Как правильно завязать галстук пошагово",
     "expected_video": "galstuk",
-    "category": "speech"
+    "category": "speech",
+    "decomposition": {
+      "asr_query": "как правильно завязать галстук пошагово",
+      "visual_queries": [],
+      "visual_mode": "all"
+    }
   },
   {
     "query": "Как приготовить домашнюю пиццу в духовке",
     "expected_video": "pizza",
-    "category": "speech"
+    "category": "speech",
+    "decomposition": {
+      "asr_query": "как приготовить домашнюю пиццу в духовке",
+      "visual_queries": [],
+      "visual_mode": "all"
+    }
   },
   {
     "query": "Как приготовить блины на молоке",
     "expected_video": "blini",
-    "category": "speech"
+    "category": "speech",
+    "decomposition": {
+      "asr_query": "как приготовить блины на молоке",
+      "visual_queries": [],
+      "visual_mode": "all"
+    }
   },
   {
     "query": "Вино марки Duckhorn Vineyards",
     "expected_video": "vino",
-    "category": "ocr"
+    "category": "ocr",
+    "decomposition": {
+      "asr_query": "Вино марки Duckhorn Vineyards",
+      "visual_queries": [],
+      "visual_mode": "all"
+    }
   },
   {
     "query": "Продюсер Василий Нефедкин в титрах",
     "expected_video": "obuv",
-    "category": "ocr"
+    "category": "ocr",
+    "decomposition": {
+      "asr_query": "Продюсер Василий Нефедкин в титрах",
+      "visual_queries": [],
+      "visual_mode": "all"
+    }
   },
   {
     "query": "Человек стоит перед самолетом",
     "expected_video": "bomber",
-    "category": "visual"
+    "category": "visual",
+    "decomposition": {
+      "asr_query": null,
+      "visual_queries": ["man standing in front of airplane", "person airplane"],
+      "visual_mode": "all"
+    }
   },
   {
     "query": "Люди стоят около танка на заднем плане",
     "expected_video": "bomber",
-    "category": "visual"
+    "category": "visual",
+    "decomposition": {
+      "asr_query": null,
+      "visual_queries": ["people standing near tank", "military vehicle soldiers"],
+      "visual_mode": "all"
+    }
   },
   {
     "query": "Бутылки вина на столе",
     "expected_video": "vino",
-    "category": "visual"
+    "category": "visual",
+    "decomposition": {
+      "asr_query": null,
+      "visual_queries": ["bottles of wine on the table", "wine bottles table"],
+      "visual_mode": "all"
+    }
   }
 ]

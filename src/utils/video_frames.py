@@ -10,7 +10,6 @@ from typing import Any
 
 from PIL import Image
 
-
 logger = logging.getLogger(__name__)
 _SEEK_EPSILON_SEC = 1e-3
 

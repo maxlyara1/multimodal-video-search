@@ -3,7 +3,7 @@
 Универсальная система мультимодального семантического поиска и генеративного ответа (Video-RAG) по видеоконтенту.
 
 [![MVP UI](https://img.shields.io/badge/MVP-UI_Ready-brightgreen)](#7-интерфейс-mvp)
-[![Hit@3](https://img.shields.io/badge/Hit%403-80%25-blue)](#8-результаты-и-метрики)
+[![Hit@3](https://img.shields.io/badge/Hit%403-90%25%20(Max--per--Modality)-blue)](#8-результаты-и-метрики)
 [![Competition](https://img.shields.io/badge/JMLC-2026-orange)](#9-происхождение-проекта-и-вклад)
 
 ---
@@ -94,8 +94,9 @@ docker run -p 8000:8000 --env-file .env multimodal-video-search
 
 ## 8. Результаты и метрики
 - **ASR-only**: Hit@1 = 70.00%, Hit@3 = 80.00%
-- **Multimodal (RRF слияние)**: Hit@1 = **70.00%**, Hit@3 = **70.00%** (ранговое слияние RRF компенсирует различие шкал и убирает ложные срабатывания OCR на речевых запросах)
-- **Multimodal (Sum слияние)**: Hit@1 = 60.00%, Hit@3 = 80.00% (смещение в пользу высокочастотных OCR совпадений ухудшает Hit@1)
+- **Multimodal (Max-per-Modality)**: Hit@1 = **70.00%**, Hit@3 = **90.00%** (динамический Query Routing в сочетании с извлечением сырых описаний BLIP captions позволил обойти baseline на 10% по Hit@3)
+- **Multimodal (RRF слияние)**: Hit@1 = 60.00%, Hit@3 = 70.00% (устраняет ошибку Sum на речевых запросах)
+- **Multimodal (Sum слияние)**: Hit@1 = 50.00%, Hit@3 = 80.00%
 *Подробный разбор эксперимента приведен в файле `benchmark_results.md`.*
 
 ## 9. Происхождение проекта и вклад

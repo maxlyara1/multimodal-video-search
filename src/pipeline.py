@@ -245,18 +245,18 @@ class VideoRAGPipeline:
     def process_video(self, video_path: str | Path, force: bool = False) -> dict[str, list[ModalityRecord]]:
         video_path = Path(video_path).resolve()
         artifact_path = self.artifacts_dir / f"{video_path.stem}.json"
-        
+
         cached_records: dict[str, list[ModalityRecord]] = {}
         if artifact_path.exists():
             try:
                 cached_records = self._load_artifact(artifact_path)
             except Exception as exc:
                 logger.warning("Не удалось загрузить кэш артефакта %s: %s. Начинаем заново.", artifact_path.name, exc)
-                
+
         enabled = self.enabled_modalities()
         if not force and all(m in cached_records for m in enabled):
             return cached_records
-            
+
         return self._extract_and_save(video_path, cached_records=cached_records, force=force)
 
     _MODALITY_UNITS: dict[str, str] = {
@@ -271,7 +271,7 @@ class VideoRAGPipeline:
         artifact_path = self.artifacts_dir / f"{video_path.stem}.json"
         t_video = time.perf_counter()
         records_by_modality = cached_records or {}
-        
+
         for modality, extractor in self._get_extractors().items():
             t_mod = time.perf_counter()
             if not force and modality in records_by_modality and records_by_modality[modality]:
@@ -281,7 +281,7 @@ class VideoRAGPipeline:
                     modality.upper(), len(records_by_modality[modality]), unit,
                 )
                 continue
-                
+
             records = extractor.extract(video_path)
             records_by_modality[modality] = records
             unit = self._MODALITY_UNITS.get(modality, "записей")
@@ -291,7 +291,7 @@ class VideoRAGPipeline:
                 _fmt_elapsed(time.perf_counter() - t_mod),
             )
             self._save_artifact(artifact_path, records_by_modality)
-            
+
         logger.info("  итого: %s", _fmt_elapsed(time.perf_counter() - t_video))
         return records_by_modality
 
@@ -397,33 +397,33 @@ class VideoRAGPipeline:
     ) -> dict[str, int]:
         resolved_paths = [Path(p).resolve() for p in video_paths]
         modalities = self.enabled_modalities()
-        
+
         logger.info("=== Indexing uploaded videos to collection %s ===", prefix)
-        
+
         all_records: dict[str, list[ModalityRecord]] = {m: [] for m in modalities}
-        
+
         for idx, video_path in enumerate(resolved_paths, 1):
             logger.info("Processing uploaded video %d/%d: %s", idx, len(resolved_paths), video_path.name)
             # process_video returns cached if it exists, otherwise extracts
             artifact = self.process_video(video_path, force=False)
             for modality, records in artifact.items():
                 all_records.setdefault(modality, []).extend(records)
-                
+
         all_records = {
             modality: self._records_for_index(modality, records)
             for modality, records in all_records.items()
         }
-        
+
         store = self._get_store()
         embedder = self._get_embedder()
-        
+
         for modality, records in all_records.items():
             if recreate:
                 store.recreate_collection(modality, prefix=prefix)
             if not records:
                 logger.info("  [%s] 0 records to index", modality.upper())
                 continue
-            
+
             logger.info("  [%s] embedding %d records for collection %s...", modality.upper(), len(records), prefix)
             embeddings = embedder.embed(
                 [record.text for record in records],
@@ -431,7 +431,7 @@ class VideoRAGPipeline:
             )
             store.upsert_records(modality, records, embeddings, prefix=prefix)
             logger.info("  [%s] upload done", modality.upper())
-            
+
         return {modality: len(records) for modality, records in all_records.items()}
 
     def index_uploaded_videos_generator(
@@ -442,11 +442,12 @@ class VideoRAGPipeline:
     ):
         import queue
         import threading
+
         from src.utils.telemetry import register_telemetry_listener, unregister_telemetry_listener
-        
+
         resolved_paths = [Path(p).resolve() for p in video_paths]
         event_queue = queue.Queue()
-        
+
         # Telemetry listener to capture progress thread-safely
         def telemetry_listener(
             stage: str,
@@ -473,17 +474,17 @@ class VideoRAGPipeline:
                 "rss_mb": rss_mb,
                 "device": device
             })
-            
+
         register_telemetry_listener(telemetry_listener)
-        
+
         errors = []
         indexed_stats = {}
-        
+
         def run_indexing():
             try:
                 modalities = self.enabled_modalities()
                 all_records = {m: [] for m in modalities}
-                
+
                 for modality in modalities:
                     event_queue.put({
                         "type": "milestone",
@@ -491,7 +492,7 @@ class VideoRAGPipeline:
                         "status": "running",
                         "message": f"Извлечение признаков {modality.upper()}..."
                     })
-                    
+
                     for idx, video_path in enumerate(resolved_paths, 1):
                         artifact_path = self.artifacts_dir / f"{video_path.stem}.json"
                         cached_records = {}
@@ -500,7 +501,7 @@ class VideoRAGPipeline:
                                 cached_records = self._load_artifact(artifact_path)
                             except Exception:
                                 pass
-                        
+
                         if modality in cached_records and cached_records[modality]:
                             records = cached_records[modality]
                             # Yield instant completion signal for cached items
@@ -540,9 +541,9 @@ class VideoRAGPipeline:
                                 self._save_artifact(artifact_path, cached_records)
                             else:
                                 records = []
-                                
+
                         all_records[modality].extend(records)
-                        
+
                     event_queue.put({
                         "type": "milestone",
                         "step": modality,
@@ -550,37 +551,37 @@ class VideoRAGPipeline:
                         "message": f"Завершено {modality.upper()}",
                         "count": len(all_records[modality])
                     })
-                    
+
                 # Format records for indexing
                 all_records = {
                     m: self._records_for_index(m, recs)
                     for m, recs in all_records.items()
                 }
-                
+
                 event_queue.put({
                     "type": "milestone",
                     "step": "embed",
                     "status": "running",
                     "message": "Векторизация текстов и запись в Qdrant..."
                 })
-                
+
                 store = self._get_store()
                 embedder = self._get_embedder()
-                
+
                 for modality, records in all_records.items():
                     if recreate:
                         store.recreate_collection(modality, prefix=prefix)
                     if not records:
                         indexed_stats[modality] = 0
                         continue
-                        
+
                     embeddings = embedder.embed(
                         [record.text for record in records],
                         batch_size=self.cfg["indexing"].get("batch_size", 8),
                     )
                     store.upsert_records(modality, records, embeddings, prefix=prefix)
                     indexed_stats[modality] = len(records)
-                    
+
                 event_queue.put({
                     "type": "milestone",
                     "step": "embed",
@@ -588,17 +589,17 @@ class VideoRAGPipeline:
                     "message": "Векторный индекс успешно построен!",
                     "stats": indexed_stats
                 })
-                
+
             except Exception as e:
                 logger.error(f"Error in background indexing worker: {e}", exc_info=True)
                 errors.append(str(e))
             finally:
                 unregister_telemetry_listener(telemetry_listener)
-                
+
         # Start worker thread
         thread = threading.Thread(target=run_indexing, name="indexing_worker")
         thread.start()
-        
+
         # Read from queue and yield events
         while thread.is_alive() or not event_queue.empty():
             try:
@@ -606,7 +607,7 @@ class VideoRAGPipeline:
                 yield event
             except queue.Empty:
                 continue
-                
+
         if errors:
             raise RuntimeError(errors[0])
 
@@ -634,7 +635,14 @@ class VideoRAGPipeline:
         store = self._get_store()
         embedder = self._get_embedder()
         score_threshold = self.cfg["search"].get("score_threshold")
-        for modality in self.enabled_modalities():
+        # Query-aware routing to suppress noise in single-mode queries
+        active_modalities = list(self.enabled_modalities())
+        if decomposition.asr_query and not decomposition.visual_queries:
+            active_modalities = [m for m in active_modalities if m in {"asr", "ocr"}]
+        elif not decomposition.asr_query and decomposition.visual_queries:
+            active_modalities = [m for m in active_modalities if m == "visual"]
+
+        for modality in active_modalities:
             modality_query = modality_queries.get(modality) or query
             if not modality_query.strip():
                 continue
@@ -698,6 +706,10 @@ class VideoRAGPipeline:
         metadata = record.metadata or {}
         texts: dict[str, str] = {}
 
+        caption = metadata.get("caption")
+        if caption:
+            texts["caption"] = caption
+
         counting = metadata.get("counting") or {}
         if counting:
             lines = ["Object counting:"]
@@ -750,7 +762,7 @@ class VideoRAGPipeline:
         weights = self.cfg["search"].get("modality_weights", {})
         fusion_method = self.cfg["search"].get("fusion_method", "rrf")
         rrf_k = int(self.cfg["search"].get("rrf_k", 60))
-        
+
         # Получаем ранги хитов внутри каждой модальности для RRF
         ranked_hits = {}
         hits_by_modality = {}
@@ -869,7 +881,7 @@ class VideoRAGPipeline:
                 metadata = record.get("metadata") or {}
                 if "det_type" in metadata:
                     metadata["visual_evidence_type"] = metadata.pop("det_type")
-                
+
                 loaded[mod_key].append(
                     ModalityRecord(
                         video_file=record["video_file"],

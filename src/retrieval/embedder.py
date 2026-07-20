@@ -7,7 +7,6 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 from torch import Tensor
-from tqdm.auto import tqdm
 from transformers import AutoModel, AutoTokenizer
 
 from src.runtime import cleanup_torch_memory, detect_torch_device, resolve_torch_dtype
@@ -72,7 +71,7 @@ class Embedder:
         ).to(self.device)
         self._model.eval()
 
-        self.dim = output_dim or int(getattr(self._model.config, "hidden_size"))
+        self.dim = output_dim or int(self._model.config.hidden_size)
         logger.info("Embedder: модель готова (dim=%d)", self.dim)
 
     @staticmethod
@@ -152,7 +151,7 @@ class Embedder:
             total_items=total_batches,
             device=str(self.device),
         )
-        
+
         vectors: list[np.ndarray] = []
         for idx, batch in enumerate(self._batched(formatted, batch_size), 1):
             vectors.append(self._encode_batch(batch))
@@ -176,7 +175,7 @@ class Embedder:
             total_items=total_batches,
             device=str(self.device),
         )
-        
+
         vectors: list[np.ndarray] = []
         for idx, batch in enumerate(self._batched(formatted, batch_size), 1):
             vectors.append(self._encode_batch(batch))

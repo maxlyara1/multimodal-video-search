@@ -10,9 +10,9 @@ import torch
 
 from src.models import ModalityRecord
 from src.runtime import detect_torch_device, is_cuda_device, is_mps_device
+from src.utils.telemetry import ProgressTelemetry
 from src.utils.video_frames import RobustVideoFrameSampler
 from src.utils.video_metadata import probe_video_duration
-from src.utils.telemetry import ProgressTelemetry
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +41,7 @@ class EasyOCROnScreenExtractor:
         self.min_confidence = min_confidence
         self.device = detect_torch_device(device)
         logger.info("OCR: загрузка EasyOCR %s на %s...", languages, self.device)
-        
+
         gpu_enabled = (
             (is_cuda_device(self.device) and torch.cuda.is_available()) or
             (is_mps_device(self.device) and torch.backends.mps.is_available())
@@ -55,7 +55,6 @@ class EasyOCROnScreenExtractor:
         logger.info("OCR: модель готова (шаг кадров %.1f сек)", self.frame_step_sec)
 
     def extract(self, video_path: str | Path) -> list[ModalityRecord]:
-        import time
         duration = probe_video_duration(video_path)
         frames = self.frame_sampler.sample_regular_frames(
             video_path,
@@ -82,7 +81,7 @@ class EasyOCROnScreenExtractor:
                 top_y = float(bbox[0][1])
                 blocks.append((top_y, clean_text, float(confidence)))
             blocks.sort(key=lambda item: item[0])
-            
+
             if blocks:
                 full_text = " | ".join(text for _, text, _ in blocks)
                 results.append(

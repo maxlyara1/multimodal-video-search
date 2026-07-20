@@ -8,7 +8,7 @@
 
 ## Параметры окружения и воспроизводимости
 
-- **Git Commit**: `68fa7e17c199f272cdfa2d8020638499ba0e58d2`
+- **Git Commit**: `5242591fdf72cb8cd22edfa925eeee389a3d998d`
 - **Config SHA-256**: `8743f4d64a8f` (файл `configs/config.yaml`)
 - **Всего запросов**: 10
 - **База векторов**: Qdrant (локальная база)
@@ -17,18 +17,18 @@
 
 | Стратегия | Метод слияния | Hit@1 | Hit@3 | Local retrieval pipeline latency |
 | :--- | :--- | :---: | :---: | :---: |
-| ASR-only | Sum | 70.00% | 80.00% | 0.370s |
-| Multimodal | Sum | 60.00% | 80.00% | 0.727s |
-| **Multimodal** | **RRF** | **70.00%** | **70.00%** | 0.792s |
-| Multimodal | Max-per-Modality | 60.00% | 80.00% | 0.829s |
+| ASR-only | Sum | 70.00% | 80.00% | 0.426s |
+| Multimodal | Sum | 50.00% | 80.00% | 0.898s |
+| **Multimodal** | **RRF** | **60.00%** | **70.00%** | 0.863s |
+| Multimodal | Max-per-Modality | 70.00% | 90.00% | 0.891s |
 
 ## 2. Метрики по категориям запросов (Hit@1)
 
 | Категория | Кол-во | ASR-only | Multimodal (Sum) | Multimodal (RRF) | Multimodal (Max-per-Modality) |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| `SPEECH` | 5 | 100.00% | 80.00% | **100.00%** | 80.00% |
+| `SPEECH` | 5 | 100.00% | 60.00% | **80.00%** | 80.00% |
 | `OCR` | 2 | 50.00% | 50.00% | **50.00%** | 50.00% |
-| `VISUAL` | 3 | 33.33% | 33.33% | **33.33%** | 33.33% |
+| `VISUAL` | 3 | 33.33% | 33.33% | **33.33%** | 66.67% |
 
 ## 3. Детальные результаты по запросам (Топ-1 найденное видео)
 
@@ -36,12 +36,12 @@
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | "Где говорят про роблокс?" | `SPEECH` | `roblox` | `roblox` | `roblox` | `roblox` |
 | "Рецепт итальянской пасты карбонара с панчеттой и желтками" | `SPEECH` | `carbonara` | `carbonara` | `carbonara` | `carbonara` |
-| "Как правильно завязать галстук пошагово" | `SPEECH` | `galstuk` | `galstuk` | `galstuk` | `galstuk` |
+| "Как правильно завязать галстук пошагово" | `SPEECH` | `galstuk` | `galstuk` | `shnurki` | `shnurki` |
 | "Как приготовить домашнюю пиццу в духовке" | `SPEECH` | `pizza` | `pizza` | `pizza` | `pizza` |
-| "Как приготовить блины на молоке" | `SPEECH` | `blini` | `blini` | `plombir` | `blini` |
+| "Как приготовить блины на молоке" | `SPEECH` | `blini` | `blini` | `sirniki` | `blini` |
 | "Вино марки Duckhorn Vineyards" | `OCR` | `vino` | `vino` | `vino` | `vino` |
-| "Продюсер Василий Нефедкин в титрах" | `OCR` | `obuv` | `kosuha` | `sirniki` | `sirniki` |
-| "Человек стоит перед самолетом" | `VISUAL` | `bomber` | `taco` | `sirniki` | `obuv` |
+| "Продюсер Василий Нефедкин в титрах" | `OCR` | `obuv` | `kosuha` | `sirniki` | `kosuha` |
+| "Человек стоит перед самолетом" | `VISUAL` | `bomber` | `taco` | `zhara` | `zhara` |
 | "Люди стоят около танка на заднем плане" | `VISUAL` | `bomber` | `taco` | `sirniki` | `taco` |
 | "Бутылки вина на столе" | `VISUAL` | `vino` | `vino` | `vino` | `vino` |
 

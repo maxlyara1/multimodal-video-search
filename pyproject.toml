@@ -3,7 +3,7 @@ name = "multimodal-video-search"
 version = "1.0.0"
 description = "Universal system for multimodal semantic video search and generative answering (Video-RAG)"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 license = { text = "MIT" }
 authors = [
     { name = "Maksim Lyara", email = "maxlyara1@yandex.ru" }
@@ -34,7 +34,7 @@ dev = [
 
 [tool.ruff]
 line-length = 120
-target-version = "py39"
+target-version = "py310"
 
 [tool.ruff.lint]
 select = [
@@ -47,6 +47,13 @@ select = [
 ]
 ignore = [
     "E501", # line too long (handled by formatter)
+    "B008", # do not perform function call File/Form in argument defaults
+    "B904", # raise exception from None
+    "C901", # function too complex
+    "E402", # module level import not at top of file
+    "B023", # loop variable binding in functions
+    "B007", # loop control variable not used
+    "B905", # zip without strict parameter
 ]
 
 [tool.pytest.ini_options]

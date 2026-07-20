@@ -612,18 +612,9 @@ class VideoRAGPipeline:
             raise RuntimeError(errors[0])
 
 
-    def search(self, query: str, collection_prefix: str | None = None) -> tuple[QueryDecomposition, list[CandidateWindow]]:
-        try:
-            query_decoupler = self._get_query_decoupler()
-            decomposition = (
-                query_decoupler.decouple(query)
-                if query_decoupler is not None
-                else QueryDecomposition(original_query=query, asr_query=query, visual_queries=[], visual_mode="all")
-            )
-        except Exception as e:
-            logger.warning(f"Failed to initialize or decouple query with GeminiQueryDecoupler: {e}. Falling back to default decomposition.")
-            decomposition = QueryDecomposition(original_query=query, asr_query=query, visual_queries=[], visual_mode="all")
-
+    def retrieve_with_decomposition(
+        self, query: str, decomposition: QueryDecomposition, collection_prefix: str | None = None
+    ) -> list[CandidateWindow]:
         modality_queries = {
             "asr": self._build_text_retrieval_query(query, decomposition.asr_query),
             "ocr": self._build_text_retrieval_query(query, decomposition.asr_query),
@@ -635,6 +626,7 @@ class VideoRAGPipeline:
         store = self._get_store()
         embedder = self._get_embedder()
         score_threshold = self.cfg["search"].get("score_threshold")
+
         # Query-aware routing to suppress noise in single-mode queries
         active_modalities = list(self.enabled_modalities())
         if decomposition.asr_query and not decomposition.visual_queries:
@@ -657,7 +649,21 @@ class VideoRAGPipeline:
                 hits = [hit for hit in hits if hit.score >= float(score_threshold)]
             all_hits.extend(hits)
 
-        candidates = self._merge_hits(all_hits)
+        return self._merge_hits(all_hits)
+
+    def search(self, query: str, collection_prefix: str | None = None) -> tuple[QueryDecomposition, list[CandidateWindow]]:
+        try:
+            query_decoupler = self._get_query_decoupler()
+            decomposition = (
+                query_decoupler.decouple(query)
+                if query_decoupler is not None
+                else QueryDecomposition(original_query=query, asr_query=query, visual_queries=[], visual_mode="all")
+            )
+        except Exception as e:
+            logger.warning(f"Failed to initialize or decouple query with GeminiQueryDecoupler: {e}. Falling back to default decomposition.")
+            decomposition = QueryDecomposition(original_query=query, asr_query=query, visual_queries=[], visual_mode="all")
+
+        candidates = self.retrieve_with_decomposition(query, decomposition, collection_prefix=collection_prefix)
         final_top_k = self.cfg["search"].get("final_top_k", 5)
         candidates.sort(key=lambda item: item.score, reverse=True)
         candidates = candidates[:final_top_k]

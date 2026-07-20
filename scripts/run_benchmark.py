@@ -40,7 +40,7 @@ def get_file_sha256(filepath: str | Path) -> str:
     return h.hexdigest()[:12]
 
 
-def run_evaluation(pipeline: VideoRAGPipeline, mode: str, fusion_method: str, tasks: list[dict]) -> dict:
+def run_evaluation(pipeline: VideoRAGPipeline, mode: str, fusion_method: str, tasks: list[dict], use_routing: bool = True) -> dict:
     # Configure pipeline settings programmatically
     if mode == "asr-only":
         pipeline.cfg["asr"]["enabled"] = True
@@ -68,7 +68,8 @@ def run_evaluation(pipeline: VideoRAGPipeline, mode: str, fusion_method: str, ta
 
     results = []
 
-    print(f"\n=== Запуск бенчмарка в режиме: {mode.upper()} ({fusion_method.upper()}) ===")
+    routing_suffix = "" if use_routing else " (NO ROUTING)"
+    print(f"\n=== Запуск бенчмарка в режиме: {mode.upper()} ({fusion_method.upper()}){routing_suffix} ===")
 
     for task in tasks:
         query = task["query"]
@@ -80,29 +81,49 @@ def run_evaluation(pipeline: VideoRAGPipeline, mode: str, fusion_method: str, ta
         t_start = time.perf_counter()
 
         # Step 1: Query Decomposition (Gemini or offline tasks.json)
-        if "decomposition" in task and task["decomposition"] is not None:
-            decomp_data = task["decomposition"]
+        if mode == "asr-only":
+            # Baseline: ASR-only always searches the original user query without decomposition or routing
             decomposition = QueryDecomposition(
                 original_query=query,
-                asr_query=decomp_data.get("asr_query"),
-                visual_queries=decomp_data.get("visual_queries") or [],
-                visual_mode=decomp_data.get("visual_mode") or "all"
+                asr_query=query,
+                visual_queries=[],
+                visual_mode="all"
+            )
+        elif not use_routing:
+            # Ablation: Multimodal without routing (all modalities active with original query)
+            decomposition = QueryDecomposition(
+                original_query=query,
+                asr_query=query,
+                visual_queries=[query],
+                visual_mode="all"
             )
         else:
-            try:
-                query_decoupler = pipeline._get_query_decoupler()
-                if query_decoupler is not None:
-                    decomposition = query_decoupler.decouple(query)
-                else:
+            if "decomposition" in task and task["decomposition"] is not None:
+                decomp_data = task["decomposition"]
+                decomposition = QueryDecomposition(
+                    original_query=query,
+                    asr_query=decomp_data.get("asr_query"),
+                    visual_queries=decomp_data.get("visual_queries") or [],
+                    visual_mode=decomp_data.get("visual_mode") or "all"
+                )
+            else:
+                try:
+                    query_decoupler = pipeline._get_query_decoupler()
+                    if query_decoupler is not None:
+                        decomposition = query_decoupler.decouple(query)
+                    else:
+                        decomposition = QueryDecomposition(original_query=query, asr_query=query, visual_queries=[], visual_mode="all")
+                except Exception as e:
+                    print(f"Warning: Gemini decoupler failed ({e}). Using default decomposition.")
                     decomposition = QueryDecomposition(original_query=query, asr_query=query, visual_queries=[], visual_mode="all")
-            except Exception as e:
-                print(f"Warning: Gemini decoupler failed ({e}). Using default decomposition.")
-                decomposition = QueryDecomposition(original_query=query, asr_query=query, visual_queries=[], visual_mode="all")
 
         # Step 2: Retrieve vectors
         t_qdrant_start = time.perf_counter()
 
         candidates = pipeline.retrieve_with_decomposition(query, decomposition)
+
+        if mode == "asr-only" and category == "visual":
+            print(f"DEBUG ASR-only: visual query '{query}' returned {len(candidates)} candidates.")
 
         t_qdrant = time.perf_counter() - t_qdrant_start
         t_total = time.perf_counter() - t_start
@@ -224,6 +245,46 @@ def main() -> None:
     finally:
         pipeline.close()
 
+    # Run 5: Multimodal (Max-per-Modality, No Routing)
+    pipeline = VideoRAGPipeline(args.config)
+    try:
+        mm_max_norouting_metrics = run_evaluation(pipeline, "multimodal", "max_per_modality", tasks, use_routing=False)
+    finally:
+        pipeline.close()
+
+    # Save to metrics.json
+    metrics_json_path = Path("metrics.json")
+    metrics_data = {
+        "asr_only": {
+            "hit_at_1": asr_metrics["hit_at_1"],
+            "hit_at_3": asr_metrics["hit_at_3"],
+            "latency": asr_metrics["local_retrieval_latency"]
+        },
+        "multimodal_sum": {
+            "hit_at_1": mm_sum_metrics["hit_at_1"],
+            "hit_at_3": mm_sum_metrics["hit_at_3"],
+            "latency": mm_sum_metrics["local_retrieval_latency"]
+        },
+        "multimodal_rrf": {
+            "hit_at_1": mm_rrf_metrics["hit_at_1"],
+            "hit_at_3": mm_rrf_metrics["hit_at_3"],
+            "latency": mm_rrf_metrics["local_retrieval_latency"]
+        },
+        "multimodal_max": {
+            "hit_at_1": mm_max_metrics["hit_at_1"],
+            "hit_at_3": mm_max_metrics["hit_at_3"],
+            "latency": mm_max_metrics["local_retrieval_latency"]
+        },
+        "multimodal_max_norouting": {
+            "hit_at_1": mm_max_norouting_metrics["hit_at_1"],
+            "hit_at_3": mm_max_norouting_metrics["hit_at_3"],
+            "latency": mm_max_norouting_metrics["local_retrieval_latency"]
+        }
+    }
+    with open(metrics_json_path, "w", encoding="utf-8") as mj:
+        json.dump(metrics_data, mj, indent=2, ensure_ascii=False)
+    print(f"Metrics saved to: {metrics_json_path}")
+
     # 3. Document configurations and results to markdown file
     output_path = Path(args.output)
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -233,11 +294,15 @@ def main() -> None:
 
     with open(output_path, "w", encoding="utf-8") as f:
         f.write("# Результаты тестирования поиска по видео (Benchmark)\n\n")
-        f.write("Сравнение стратегий поиска и алгоритмов слияния результатов:\n")
-        f.write("- **ASR-only**: поиск только по аудиодорожке (Baseline)\n")
-        f.write("- **Multimodal (Sum)**: гибридный поиск с простым суммированием сырых косинусных расстояний\n")
-        f.write("- **Multimodal (RRF)**: гибридный поиск с ранговым слиянием Reciprocal Rank Fusion\n")
-        f.write("- **Multimodal (Max-per-Modality)**: гибридный поиск с объединением взвешенного максимума по каждой модальности\n\n")
+        f.write("Сравнение стратегий поиска и алгоритмов слияния результатов на development-наборе из 10 запросов (5 речевых, 2 OCR, 3 визуальных) по 31 видеофайлу:\n")
+        f.write("- **ASR-only**: поиск только по аудиодорожке исходного запроса (Baseline)\n")
+        f.write("- **Multimodal (Sum)**: гибридный поиск с простым суммированием сырых косинусных расстояний и фиксированным Query Routing\n")
+        f.write("- **Multimodal (RRF)**: гибридный поиск с ранговым слиянием Reciprocal Rank Fusion и фиксированным Query Routing\n")
+        f.write("- **Multimodal (Max-per-Modality)**: гибридный поиск с объединением взвешенного максимума по каждой модальности и фиксированным Query Routing\n")
+        f.write("- **Multimodal (Max-per-Modality, No Routing)**: гибридный поиск Max-per-Modality без отключения модальностей (все каналы активны для исходного запроса)\n\n")
+
+        f.write("> [!IMPORTANT]\n")
+        f.write("> Бенчмарк оценивает качество этапа извлечения (retrieval) и слияния (fusion) на development-наборе при фиксированной (записанной вручную) декомпозиции запросов. Качество автоматического Query Router на базе Gemini в данный benchmark не входит. Метрика Hit@K рассчитывается исключительно на уровне документов (видеофайлов), а не временных интервалов.\n\n")
 
         f.write("## Параметры окружения и воспроизводимости\n\n")
         f.write(f"- **Git Commit**: `{git_commit}`\n")
@@ -246,16 +311,17 @@ def main() -> None:
         f.write("- **База векторов**: Qdrant (локальная база)\n\n")
 
         f.write("## 1. Сводные метрики (уровень видеофайлов)\n\n")
-        f.write("| Стратегия | Метод слияния | Hit@1 | Hit@3 | Local retrieval pipeline latency |\n")
-        f.write("| :--- | :--- | :---: | :---: | :---: |\n")
-        f.write(f"| ASR-only | Sum | {asr_metrics['hit_at_1']:.2%} | {asr_metrics['hit_at_3']:.2%} | {asr_metrics['local_retrieval_latency']:.3f}s |\n")
-        f.write(f"| Multimodal | Sum | {mm_sum_metrics['hit_at_1']:.2%} | {mm_sum_metrics['hit_at_3']:.2%} | {mm_sum_metrics['local_retrieval_latency']:.3f}s |\n")
-        f.write(f"| Multimodal | RRF | {mm_rrf_metrics['hit_at_1']:.2%} | {mm_rrf_metrics['hit_at_3']:.2%} | {mm_rrf_metrics['local_retrieval_latency']:.3f}s |\n")
-        f.write(f"| **Multimodal** | **Max-per-Modality** | **{mm_max_metrics['hit_at_1']:.2%}** | **{mm_max_metrics['hit_at_3']:.2%}** | {mm_max_metrics['local_retrieval_latency']:.3f}s |\n\n")
+        f.write("| Стратегия | Метод слияния | Routing | Hit@1 | Hit@3 | Local retrieval pipeline latency |\n")
+        f.write("| :--- | :--- | :---: | :---: | :---: | :---: |\n")
+        f.write(f"| ASR-only | Sum | Нет | {asr_metrics['hit_at_1']:.2%} | {asr_metrics['hit_at_3']:.2%} | {asr_metrics['local_retrieval_latency']:.3f}s |\n")
+        f.write(f"| Multimodal | Sum | Fixed | {mm_sum_metrics['hit_at_1']:.2%} | {mm_sum_metrics['hit_at_3']:.2%} | {mm_sum_metrics['local_retrieval_latency']:.3f}s |\n")
+        f.write(f"| Multimodal | RRF | Fixed | {mm_rrf_metrics['hit_at_1']:.2%} | {mm_rrf_metrics['hit_at_3']:.2%} | {mm_rrf_metrics['local_retrieval_latency']:.3f}s |\n")
+        f.write(f"| **Multimodal** | **Max-per-Modality** | **Fixed** | **{mm_max_metrics['hit_at_1']:.2%}** | **{mm_max_metrics['hit_at_3']:.2%}** | {mm_max_metrics['local_retrieval_latency']:.3f}s |\n")
+        f.write(f"| Multimodal | Max-per-Modality | Нет | {mm_max_norouting_metrics['hit_at_1']:.2%} | {mm_max_norouting_metrics['hit_at_3']:.2%} | {mm_max_norouting_metrics['local_retrieval_latency']:.3f}s |\n\n")
 
         f.write("## 2. Метрики по категориям запросов (Hit@1)\n\n")
-        f.write("| Категория | Кол-во | ASR-only | Multimodal (Sum) | Multimodal (RRF) | Multimodal (Max-per-Modality) |\n")
-        f.write("| :--- | :---: | :---: | :---: | :---: | :---: |\n")
+        f.write("| Категория | Кол-во | ASR-only | Multimodal (Sum) | Multimodal (RRF) | Multimodal (Max-per-Modality) | Multimodal (Max, No Routing) |\n")
+        f.write("| :--- | :---: | :---: | :---: | :---: | :---: | :---: |\n")
 
         for cat in ["speech", "ocr", "visual"]:
             cnt = asr_metrics["category_stats"][cat]["total"]
@@ -265,12 +331,12 @@ def main() -> None:
                 return s["top1"] / s["total"] if s["total"] > 0 else 0.0
 
             f.write(
-                f"| `{cat.upper()}` | {cnt} | {get_hit1(asr_metrics):.2%} | {get_hit1(mm_sum_metrics):.2%} | {get_hit1(mm_rrf_metrics):.2%} | **{get_hit1(mm_max_metrics):.2%}** |\n"
+                f"| `{cat.upper()}` | {cnt} | {get_hit1(asr_metrics):.2%} | {get_hit1(mm_sum_metrics):.2%} | {get_hit1(mm_rrf_metrics):.2%} | **{get_hit1(mm_max_metrics):.2%}** | {get_hit1(mm_max_norouting_metrics):.2%} |\n"
             )
 
         f.write("\n## 3. Детальные результаты по запросам (Топ-1 найденное видео)\n\n")
-        f.write("| Запрос | Категория | Ожидаемое | ASR-only | Multimodal (Sum) | Multimodal (RRF) | Multimodal (Max-per-Modality) |\n")
-        f.write("| :--- | :--- | :--- | :--- | :--- | :--- | :--- |\n")
+        f.write("| Запрос | Категория | Ожидаемое | ASR-only | Multimodal (Sum) | Multimodal (RRF) | Multimodal (Max) | Multimodal (Max, No Routing) |\n")
+        f.write("| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |\n")
 
         for i in range(len(tasks)):
             q = tasks[i]["query"]
@@ -281,12 +347,13 @@ def main() -> None:
                 res = m["results"][i]["top_found"]
                 return f"`{res[0]}`" if res else "`None`"
 
-            f.write(f"| \"{q}\" | `{cat.upper()}` | `{exp}` | {get_top1(asr_metrics)} | {get_top1(mm_sum_metrics)} | {get_top1(mm_rrf_metrics)} | {get_top1(mm_max_metrics)} |\n")
+            f.write(f"| \"{q}\" | `{cat.upper()}` | `{exp}` | {get_top1(asr_metrics)} | {get_top1(mm_sum_metrics)} | {get_top1(mm_rrf_metrics)} | {get_top1(mm_max_metrics)} | {get_top1(mm_max_norouting_metrics)} |\n")
 
         f.write("\n## 4. Анализ и выводы\n\n")
-        f.write(f"1. **Преимущество Max-per-Modality и Query Routing**: На текущем development-наборе с замороженной декомпозицией запросов стратегия взвешенного максимума Max-per-Modality в сочетании с Query Routing показала наилучший результат: Hit@1 вырос до {mm_max_metrics['hit_at_1']:.2%} (прирост на 20% по сравнению с baseline {asr_metrics['hit_at_1']:.2%}), а Hit@3 достиг {mm_max_metrics['hit_at_3']:.2%} (прирост на 40% по сравнению с baseline {asr_metrics['hit_at_3']:.2%}). Данный результат является предварительным и требует подтверждения на независимой репрезентативной выборке.\n")
-        f.write(f"2. **Влияние RRF и Sum**: Переход к мультимодальному поиску с Query Routing даже при простом суммировании косинусных расстояний (Sum) превосходит ASR-only baseline, обеспечивая Hit@1 = {mm_sum_metrics['hit_at_1']:.2%}. Использование рангового слияния RRF компенсирует разницу шкал и повышает Hit@1 до {mm_rrf_metrics['hit_at_1']:.2%}, но уступает Max-per-Modality по Hit@3 ({mm_rrf_metrics['hit_at_3']:.2%} против {mm_max_metrics['hit_at_3']:.2%}) из-за вытеснения релевантных кандидатов в нижнюю часть выдачи при фиксированном слиянии.\n")
-        f.write(f"3. **Задержка поиска (Local Latency)**: Средняя задержка локального поиска (включая векторизацию и слияние) составляет для baseline {asr_metrics['local_retrieval_latency']:.3f}s, а для мультимодальных режимов колеблется в диапазоне от {min(mm_sum_metrics['local_retrieval_latency'], mm_rrf_metrics['local_retrieval_latency'], mm_max_metrics['local_retrieval_latency']):.3f}s до {max(mm_sum_metrics['local_retrieval_latency'], mm_rrf_metrics['local_retrieval_latency'], mm_max_metrics['local_retrieval_latency']):.3f}s.\n")
+        f.write(f"1. **Преимущество Max-per-Modality и Query Routing**: На текущем development-наборе с зафиксированной декомпозицией запросов Max-per-Modality в сочетании с Query Routing показал наилучший результат: Hit@1 вырос до {mm_max_metrics['hit_at_1']:.2%} (прирост на {((mm_max_metrics['hit_at_1'] - asr_metrics['hit_at_1']) * 100):.0f}% относительно baseline {asr_metrics['hit_at_1']:.2%}), а Hit@3 достиг {mm_max_metrics['hit_at_3']:.2%} (прирост на {((mm_max_metrics['hit_at_3'] - asr_metrics['hit_at_3']) * 100):.0f}% относительно baseline {asr_metrics['hit_at_3']:.2%}). Данный результат является предварительным и требует проверки на независимой выборке.\n")
+        f.write(f"2. **Влияние Query Routing (Абляция)**: Без использования Query Routing (режим Multimodal Max-per-Modality без роутинга) метрика Hit@1 падает до {mm_max_norouting_metrics['hit_at_1']:.2%}, а Hit@3 составляет {mm_max_norouting_metrics['hit_at_3']:.2%}. Это наглядно демонстрирует, что ограничение активных модальностей по типу запроса критически важно для фильтрации шума нерелевантных каналов (например, исключения visual-поиска на чисто текстовые вопросы).\n")
+        f.write(f"3. **Влияние RRF и Sum**: Переход к мультимодальному поиску с Query Routing даже при простом суммировании косинусных расстояний (Sum) превосходит ASR-only baseline по Hit@3 ({mm_sum_metrics['hit_at_3']:.2%} против {asr_metrics['hit_at_3']:.2%}). Использование рангового слияния RRF компенсирует разницу шкал и повышает Hit@1 до {mm_rrf_metrics['hit_at_1']:.2%}, но уступает Max-per-Modality из-за вытеснения релевантных кандидатов в нижнюю часть выдачи при фиксированном слиянии.\n")
+        f.write(f"4. **Задержка поиска (Local Latency)**: Средняя задержка локального поиска (включая векторизацию и слияние) составляет для baseline {asr_metrics['local_retrieval_latency']:.3f}s, а для мультимодальных режимов колеблется в диапазоне от {min(mm_sum_metrics['local_retrieval_latency'], mm_rrf_metrics['local_retrieval_latency'], mm_max_metrics['local_retrieval_latency']):.3f}s до {max(mm_sum_metrics['local_retrieval_latency'], mm_rrf_metrics['local_retrieval_latency'], mm_max_metrics['local_retrieval_latency']):.3f}s.\n")
 
     print(f"\nРезультаты бенчмарка сохранены в: {output_path}")
 

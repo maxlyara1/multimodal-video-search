@@ -15,7 +15,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir torch --extra-index-url https://download.pytorch.org/whl/cpu
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Download spaCy model needed for DET module
+# Download spaCy model needed for Visual captions module
 RUN python -m spacy download en_core_web_sm
 
 # Copy project files

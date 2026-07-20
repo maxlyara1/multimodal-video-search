@@ -1,27 +1,27 @@
 {
   "asr_only": {
-    "hit_at_1": 0.7,
-    "hit_at_3": 0.8,
-    "latency": 0.40496862089494245
+    "hit_at_1": 0.68,
+    "hit_at_3": 0.82,
+    "latency": 0.30527458182303235
   },
   "multimodal_sum": {
-    "hit_at_1": 0.7,
-    "hit_at_3": 0.9,
-    "latency": 0.5613005083054304
+    "hit_at_1": 0.68,
+    "hit_at_3": 0.94,
+    "latency": 0.43275560743641106
   },
   "multimodal_rrf": {
-    "hit_at_1": 0.8,
-    "hit_at_3": 0.9,
-    "latency": 0.5421115417964757
+    "hit_at_1": 0.86,
+    "hit_at_3": 0.94,
+    "latency": 0.4802348025236279
   },
   "multimodal_max": {
-    "hit_at_1": 0.8,
-    "hit_at_3": 1.0,
-    "latency": 0.5569108916097321
+    "hit_at_1": 0.88,
+    "hit_at_3": 0.96,
+    "latency": 0.4502787157916464
   },
   "multimodal_max_norouting": {
-    "hit_at_1": 0.6,
-    "hit_at_3": 0.9,
-    "latency": 0.8859560249722562
+    "hit_at_1": 0.76,
+    "hit_at_3": 0.88,
+    "latency": 0.7686020949715748
   }
 }

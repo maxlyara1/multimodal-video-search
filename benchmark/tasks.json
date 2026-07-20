@@ -1,101 +1,561 @@
 [
   {
-    "query": "Где говорят про роблокс?",
-    "expected_video": "roblox",
+    "query": "В каком направлении нужно откручивать верхушку ананаса",
+    "expected_video": "ananas",
     "category": "speech",
     "decomposition": {
-      "asr_query": "роблокс",
+      "asr_query": "в каком направлении нужно откручивать верхушку ананаса",
       "visual_queries": [],
       "visual_mode": "all"
     }
   },
   {
-    "query": "Рецепт итальянской пасты карбонара с панчеттой и желтками",
-    "expected_video": "carbonara",
-    "category": "speech",
-    "decomposition": {
-      "asr_query": "рецепт итальянской пасты карбонара с панчеттой и желтками",
-      "visual_queries": [],
-      "visual_mode": "all"
-    }
-  },
-  {
-    "query": "Как правильно завязать галстук пошагово",
-    "expected_video": "galstuk",
-    "category": "speech",
-    "decomposition": {
-      "asr_query": "как правильно завязать галстук пошагово",
-      "visual_queries": [],
-      "visual_mode": "all"
-    }
-  },
-  {
-    "query": "Как приготовить домашнюю пиццу в духовке",
-    "expected_video": "pizza",
-    "category": "speech",
-    "decomposition": {
-      "asr_query": "как приготовить домашнюю пиццу в духовке",
-      "visual_queries": [],
-      "visual_mode": "all"
-    }
-  },
-  {
-    "query": "Как приготовить блины на молоке",
+    "query": "Какая консистенция должна получиться у теста для блинов",
     "expected_video": "blini",
     "category": "speech",
     "decomposition": {
-      "asr_query": "как приготовить блины на молоке",
+      "asr_query": "какая консистенция должна получиться у теста для блинов",
       "visual_queries": [],
       "visual_mode": "all"
     }
   },
   {
-    "query": "Вино марки Duckhorn Vineyards",
-    "expected_video": "vino",
+    "query": "Стилист Михаил Политковский в титрах",
+    "expected_video": "bomber",
     "category": "ocr",
     "decomposition": {
-      "asr_query": "Вино марки Duckhorn Vineyards",
+      "asr_query": "Стилист Михаил Политковский в титрах",
       "visual_queries": [],
       "visual_mode": "all"
     }
   },
   {
-    "query": "Продюсер Василий Нефедкин в титрах",
+    "query": "Мужчина танцует в зеленой куртке",
+    "expected_video": "bomber",
+    "category": "visual",
+    "decomposition": {
+      "asr_query": null,
+      "visual_queries": [
+        "man in green jacket dancing",
+        "man dancing green jacket"
+      ],
+      "visual_mode": "all"
+    }
+  },
+  {
+    "query": "Разбитое яйцо в белой миске",
+    "expected_video": "blini",
+    "category": "visual",
+    "decomposition": {
+      "asr_query": null,
+      "visual_queries": [
+        "broken egg in white bowl",
+        "egg bowl"
+      ],
+      "visual_mode": "all"
+    }
+  },
+  {
+    "query": "Почему российский или белорусский сыр не подходит для карбонары",
+    "expected_video": "carbonara",
+    "category": "speech",
+    "decomposition": {
+      "asr_query": "российского белорусского не подойдет",
+      "visual_queries": [],
+      "visual_mode": "all"
+    }
+  },
+  {
+    "query": "Как сделать ямочку под узлом при завязывании галстука",
+    "expected_video": "galstuk",
+    "category": "speech",
+    "decomposition": {
+      "asr_query": "сделай ямочку нажав указательным пальцем непосредственно под узлом",
+      "visual_queries": [],
+      "visual_mode": "all"
+    }
+  },
+  {
+    "query": "Инструкция по завязыванию галстука с надписью Slide the Tip Through the Hole",
+    "expected_video": "galstuk",
+    "category": "ocr",
+    "decomposition": {
+      "asr_query": "Slide the Tip Through the Hole",
+      "visual_queries": [],
+      "visual_mode": "all"
+    }
+  },
+  {
+    "query": "Человек режет свеклу ножом на разделочной доске",
+    "expected_video": "borsch",
+    "category": "visual",
+    "decomposition": {
+      "asr_query": null,
+      "visual_queries": [
+        "person cutting up a beet on a cutting board",
+        "cutting beet board"
+      ],
+      "visual_mode": "all"
+    }
+  },
+  {
+    "query": "Нарезка бекона на ярко-желтой доске",
+    "expected_video": "carbonara",
+    "category": "visual",
+    "decomposition": {
+      "asr_query": null,
+      "visual_queries": [
+        "person cutting bacon on a yellow cutting board",
+        "cutting bacon yellow board"
+      ],
+      "visual_mode": "all"
+    }
+  },
+  {
+    "query": "кто придумал куртку косуху в 1928 году",
+    "expected_video": "kosuha",
+    "category": "speech",
+    "decomposition": {
+      "asr_query": "косуху в 1928 году",
+      "visual_queries": [],
+      "visual_mode": "all"
+    }
+  },
+  {
+    "query": "какое соотношение отжатого хлеба к мясу должно быть в идеальных котлетах",
+    "expected_video": "kotleti",
+    "category": "speech",
+    "decomposition": {
+      "asr_query": "соотношение отжатого хлеба к мясу должно быть",
+      "visual_queries": [],
+      "visual_mode": "all"
+    }
+  },
+  {
+    "query": "косуха Saint Laurent ЦУМ",
+    "expected_video": "kosuha",
+    "category": "ocr",
+    "decomposition": {
+      "asr_query": "Saint Laurent ЦУМ косуха",
+      "visual_queries": [],
+      "visual_mode": "all"
+    }
+  },
+  {
+    "query": "белые кеды на синем фоне",
+    "expected_video": "kedi",
+    "category": "visual",
+    "decomposition": {
+      "asr_query": null,
+      "visual_queries": [
+        "white sneakers blue background",
+        "kedi blue background"
+      ],
+      "visual_mode": "all"
+    }
+  },
+  {
+    "query": "человек жарит котлеты на сковороде",
+    "expected_video": "kotleti",
+    "category": "visual",
+    "decomposition": {
+      "asr_query": null,
+      "visual_queries": [
+        "person frying patties on pan",
+        "frying kotleti"
+      ],
+      "visual_mode": "all"
+    }
+  },
+  {
+    "query": "рецепт пышных и влажных куличей со сливками",
+    "expected_video": "kulich",
+    "category": "speech",
+    "decomposition": {
+      "asr_query": "рецепт пышных и влажных куличей со сливками",
+      "visual_queries": [],
+      "visual_mode": "all"
+    }
+  },
+  {
+    "query": "выкручивать перегоревшую лампочку против часовой стрелки",
+    "expected_video": "lampochka",
+    "category": "speech",
+    "decomposition": {
+      "asr_query": "выкручивать перегоревшую лампочку против часовой стрелки",
+      "visual_queries": [],
+      "visual_mode": "all"
+    }
+  },
+  {
+    "query": "КАК ПРАВИЛЬНО ЧИСТИТЬ БОТИНКИ ШАГ УБРАТЬ ПЫЛЬ",
     "expected_video": "obuv",
     "category": "ocr",
     "decomposition": {
-      "asr_query": "Продюсер Василий Нефедкин в титрах",
+      "asr_query": "КАК ПРАВИЛЬНО ЧИСТИТЬ БОТИНКИ ШАГ УБРАТЬ ПЫЛЬ",
       "visual_queries": [],
       "visual_mode": "all"
     }
   },
   {
-    "query": "Человек стоит перед самолетом",
-    "expected_video": "bomber",
+    "query": "натирание лимонной цедры на терке",
+    "expected_video": "kulich",
     "category": "visual",
     "decomposition": {
       "asr_query": null,
-      "visual_queries": ["man standing in front of airplane", "person airplane"],
+      "visual_queries": [
+        "lemon zest grating",
+        "grating lemon zest"
+      ],
       "visual_mode": "all"
     }
   },
   {
-    "query": "Люди стоят около танка на заднем плане",
-    "expected_video": "bomber",
+    "query": "три лампочки лежат на столе",
+    "expected_video": "lampochka",
     "category": "visual",
     "decomposition": {
       "asr_query": null,
-      "visual_queries": ["people standing near tank", "military vehicle soldiers"],
+      "visual_queries": [
+        "three lightbulbs sitting on table",
+        "lightbulbs table"
+      ],
       "visual_mode": "all"
     }
   },
   {
-    "query": "Бутылки вина на столе",
+    "query": "Сколько минут нужно варить пельмени после их всплытия?",
+    "expected_video": "pelmeni",
+    "category": "speech",
+    "decomposition": {
+      "asr_query": "6 минут после того как пельмени всплыли",
+      "visual_queries": [],
+      "visual_mode": "all"
+    }
+  },
+  {
+    "query": "Почему для пышности панкейков нужно взбивать белки и желтки отдельно?",
+    "expected_video": "pancakes",
+    "category": "speech",
+    "decomposition": {
+      "asr_query": "по отдельности взбивать белки и желтки",
+      "visual_queries": [],
+      "visual_mode": "all"
+    }
+  },
+  {
+    "query": "Надпись СПОРТИВНАЯ ОДЕЖДА на экране",
+    "expected_video": "palto",
+    "category": "ocr",
+    "decomposition": {
+      "asr_query": "СПОРТИВНАЯ ОДЕЖДА",
+      "visual_queries": [],
+      "visual_mode": "all"
+    }
+  },
+  {
+    "query": "Собака в поварском колпаке перед тарелкой с едой",
+    "expected_video": "pelmeni",
+    "category": "visual",
+    "decomposition": {
+      "asr_query": null,
+      "visual_queries": [
+        "dog with a chef hat and a plate of food",
+        "dog chef hat plate"
+      ],
+      "visual_mode": "all"
+    }
+  },
+  {
+    "query": "Стопка панкейков на тарелке рядом с банкой меда",
+    "expected_video": "pancakes",
+    "category": "visual",
+    "decomposition": {
+      "asr_query": null,
+      "visual_queries": [
+        "stack of pancakes on a plate with a jar of honey",
+        "pancakes plate jar of honey"
+      ],
+      "visual_mode": "all"
+    }
+  },
+  {
+    "query": "сколько грамм сухих дрожжей нужно для теста на пиццу",
+    "expected_video": "pizza",
+    "category": "speech",
+    "decomposition": {
+      "asr_query": "сухих дрожжей пиццу грамм",
+      "visual_queries": [],
+      "visual_mode": "all"
+    }
+  },
+  {
+    "query": "как правильно варить желтки с сахаром для домашнего пломбира чтобы они не свернулись",
+    "expected_video": "plombir",
+    "category": "speech",
+    "decomposition": {
+      "asr_query": "желтки с сахаром домашнего пломбира",
+      "visual_queries": [],
+      "visual_mode": "all"
+    }
+  },
+  {
+    "query": "надпись обход блокировки на экране",
+    "expected_video": "roblox",
+    "category": "ocr",
+    "decomposition": {
+      "asr_query": "обход блокировки",
+      "visual_queries": [],
+      "visual_mode": "all"
+    }
+  },
+  {
+    "query": "человек нарезает круглую пиццу ножом на пергаменте",
+    "expected_video": "pizza",
+    "category": "visual",
+    "decomposition": {
+      "asr_query": null,
+      "visual_queries": [
+        "person cutting round pizza on parchment",
+        "cutting pizza"
+      ],
+      "visual_mode": "all"
+    }
+  },
+  {
+    "query": "накладывание шарика белого мороженого специальной ложкой в миску",
+    "expected_video": "plombir",
+    "category": "visual",
+    "decomposition": {
+      "asr_query": null,
+      "visual_queries": [
+        "scooping white ice cream into bowl",
+        "ice cream scoop bowl"
+      ],
+      "visual_mode": "all"
+    }
+  },
+  {
+    "query": "Сколько времени нужно держать рубашку в пластиковом пакете перед глажкой?",
+    "expected_video": "rubashka",
+    "category": "speech",
+    "decomposition": {
+      "asr_query": "продолжительность одной чашки кофе поддержать ее в пластиковом пакете",
+      "visual_queries": [],
+      "visual_mode": "all"
+    }
+  },
+  {
+    "query": "Как правильно собирать домашние шампиньоны - выкручивать или срезать?",
+    "expected_video": "shampinioni",
+    "category": "speech",
+    "decomposition": {
+      "asr_query": "выкручивать из грунта а не срезать",
+      "visual_queries": [],
+      "visual_mode": "all"
+    }
+  },
+  {
+    "query": "Надпись Как правильно завязывать шнурки на экране",
+    "expected_video": "shnurki",
+    "category": "ocr",
+    "decomposition": {
+      "asr_query": "завязывать шнурки",
+      "visual_queries": [],
+      "visual_mode": "all"
+    }
+  },
+  {
+    "query": "Мужчина в коричневом свитере гладит белую ткань на столе",
+    "expected_video": "rubashka",
+    "category": "visual",
+    "decomposition": {
+      "asr_query": null,
+      "visual_queries": [
+        "man in a brown sweater ironing",
+        "person ironing a sheet on a table"
+      ],
+      "visual_mode": "all"
+    }
+  },
+  {
+    "query": "Грибы шампиньоны в коробке на столе",
+    "expected_video": "shampinioni",
+    "category": "visual",
+    "decomposition": {
+      "asr_query": null,
+      "visual_queries": [
+        "mushrooms sitting on top of a box",
+        "box filled with white eggs on a table"
+      ],
+      "visual_mode": "all"
+    }
+  },
+  {
+    "query": "Методом проб и ошибок вывел рецепт идеальных сырников",
+    "expected_video": "sirniki",
+    "category": "speech",
+    "decomposition": {
+      "asr_query": "методом проб и ошибок вывел рецепт идеальных сырников",
+      "visual_queries": [],
+      "visual_mode": "all"
+    }
+  },
+  {
+    "query": "Как вести себя на первом свидании",
+    "expected_video": "svidanie",
+    "category": "speech",
+    "decomposition": {
+      "asr_query": "как вести себя на первом свидании",
+      "visual_queries": [],
+      "visual_mode": "all"
+    }
+  },
+  {
+    "query": "Рецепты на YouTube Калнина Наталья творог манная крупа",
+    "expected_video": "sirniki",
+    "category": "ocr",
+    "decomposition": {
+      "asr_query": "Калнина Наталья творог манная крупа",
+      "visual_queries": [],
+      "visual_mode": "all"
+    }
+  },
+  {
+    "query": "Собака в поварском колпаке и тарелка с едой",
+    "expected_video": "shproti",
+    "category": "visual",
+    "decomposition": {
+      "asr_query": null,
+      "visual_queries": [
+        "dog chef hat plate of food",
+        "dog wearing chef hat"
+      ],
+      "visual_mode": "all"
+    }
+  },
+  {
+    "query": "Женщина в белой рубашке и черных брюках",
+    "expected_video": "svidanie",
+    "category": "visual",
+    "decomposition": {
+      "asr_query": null,
+      "visual_queries": [
+        "woman in white shirt and black pants",
+        "woman white shirt black pants"
+      ],
+      "visual_mode": "all"
+    }
+  },
+  {
+    "query": "Приветствие Евгения на кулинарном канале Макареич Кичин",
+    "expected_video": "taco",
+    "category": "speech",
+    "decomposition": {
+      "asr_query": "Макареич Кичин Евгений",
+      "visual_queries": [],
+      "visual_mode": "all"
+    }
+  },
+  {
+    "query": "Как правильно заваривать чай методом проливов",
+    "expected_video": "tea",
+    "category": "speech",
+    "decomposition": {
+      "asr_query": "заваривать чай методом проливов",
+      "visual_queries": [],
+      "visual_mode": "all"
+    }
+  },
+  {
+    "query": "Рекомендация по температуре воды для заваривания черного чая",
+    "expected_video": "tea",
+    "category": "ocr",
+    "decomposition": {
+      "asr_query": "Температура воды для заваривания черного чая",
+      "visual_queries": [],
+      "visual_mode": "all"
+    }
+  },
+  {
+    "query": "Человек перемешивает нашинкованную капусту в миске",
+    "expected_video": "szhi",
+    "category": "visual",
+    "decomposition": {
+      "asr_query": null,
+      "visual_queries": [
+        "person is stirring a bowl of shredded cabbage",
+        "stirring bowl cabbage"
+      ],
+      "visual_mode": "all"
+    }
+  },
+  {
+    "query": "Нарезка репчатого лука кубиками на деревянной доске",
+    "expected_video": "taco",
+    "category": "visual",
+    "decomposition": {
+      "asr_query": null,
+      "visual_queries": [
+        "man cutting onions on a wooden cutting board",
+        "cutting onions board"
+      ],
+      "visual_mode": "all"
+    }
+  },
+  {
+    "query": "Кто изобрел плащ тренч согласно истории?",
+    "expected_video": "trench",
+    "category": "speech",
+    "decomposition": {
+      "asr_query": "тренч изобрел томас бёрберей",
+      "visual_queries": [],
+      "visual_mode": "all"
+    }
+  },
+  {
+    "query": "Исследование влияния сообщений Банка России на динамику финансовых рынков",
+    "expected_video": "upload_9eb1c395_2026-05-23_13-32-54",
+    "category": "speech",
+    "decomposition": {
+      "asr_query": "оценки влияния информационных сообщений банка россии на динамику финансовых рынков",
+      "visual_queries": [],
+      "visual_mode": "all"
+    }
+  },
+  {
+    "query": "Костюм Calvin Klein 205W39NYC и бренд Burbery в описании",
+    "expected_video": "trench",
+    "category": "ocr",
+    "decomposition": {
+      "asr_query": "Burbery Calvin Klein 205W39NYC Костюм",
+      "visual_queries": [],
+      "visual_mode": "all"
+    }
+  },
+  {
+    "query": "Кошка лежит на деревянной скамейке",
+    "expected_video": "zhara",
+    "category": "visual",
+    "decomposition": {
+      "asr_query": null,
+      "visual_queries": [
+        "cat laying on wooden bench",
+        "cat bench"
+      ],
+      "visual_mode": "all"
+    }
+  },
+  {
+    "query": "Женщина сидит за столом с бокалом вина",
     "expected_video": "vino",
     "category": "visual",
     "decomposition": {
       "asr_query": null,
-      "visual_queries": ["bottles of wine on the table", "wine bottles table"],
+      "visual_queries": [
+        "woman sitting at table with glass of wine",
+        "woman glass wine"
+      ],
       "visual_mode": "all"
     }
   }

@@ -254,14 +254,14 @@
     }
   },
   {
-    "query": "Собака в поварском колпаке перед тарелкой с едой",
+    "query": "Маленькая собака сидит в миске с ножом и вилкой",
     "expected_video": "pelmeni",
     "category": "visual",
     "decomposition": {
       "asr_query": null,
       "visual_queries": [
-        "dog with a chef hat and a plate of food",
-        "dog chef hat plate"
+        "small dog sitting in a bowl with a knife and fork",
+        "dog bowl knife fork"
       ],
       "visual_mode": "all"
     }
@@ -422,14 +422,14 @@
     }
   },
   {
-    "query": "Собака в поварском колпаке и тарелка с едой",
+    "query": "Собака в поварском колпаке держит табличку с надписью I love you",
     "expected_video": "shproti",
     "category": "visual",
     "decomposition": {
       "asr_query": null,
       "visual_queries": [
-        "dog chef hat plate of food",
-        "dog wearing chef hat"
+        "dog with a chef hat and a sign that says i love you",
+        "dog chef hat sign love"
       ],
       "visual_mode": "all"
     }

@@ -291,36 +291,42 @@ def main() -> None:
 
     git_commit = get_git_commit()
     config_sha = get_file_sha256(args.config)
+    tasks_sha = get_file_sha256("benchmark/tasks.json")
+    dataset_sha = get_file_sha256("benchmark/dataset_manifest.json")
 
     with open(output_path, "w", encoding="utf-8") as f:
-        f.write("# Результаты тестирования поиска по видео (Benchmark)\n\n")
-        f.write("Сравнение стратегий поиска и алгоритмов слияния результатов на тестовом наборе из 50 запросов (20 речевых, 10 OCR, 20 визуальных) по 31 видеофайлу:\n")
-        f.write("- **ASR-only**: поиск только по аудиодорожке исходного запроса (Baseline)\n")
-        f.write("- **Multimodal (Sum)**: гибридный поиск с простым суммированием сырых косинусных расстояний и фиксированным Query Routing\n")
-        f.write("- **Multimodal (RRF)**: гибридный поиск с ранговым слиянием Reciprocal Rank Fusion и фиксированным Query Routing\n")
-        f.write("- **Multimodal (Max-per-Modality)**: гибридный поиск с объединением взвешенного максимума по каждой модальности и фиксированным Query Routing\n")
-        f.write("- **Multimodal (Max-per-Modality, No Routing)**: гибридный поиск Max-per-Modality без отключения модальностей (все каналы активны для исходного запроса)\n\n")
+        f.write("# Результаты оценки качества поиска по видео\n\n")
+        f.write("Сравнение стратегий поиска и алгоритмов объединения результатов на проверочном наборе из 50 запросов (20 речевых, 10 OCR, 20 визуальных) по 31 видеофайлу:\n")
+        f.write("- **Только ASR**: поиск только по распознанной речи (Базовый вариант)\n")
+        f.write("- **Мультимодальный (Простая сумма)**: поиск с простым суммированием оценок косинусного сходства и фиксированным выбором модальностей\n")
+        f.write("- **Мультимодальный (RRF)**: поиск с ранговым слиянием Reciprocal Rank Fusion и фиксированным выбором модальностей\n")
+        f.write("- **Мультимодальный (Максимум)**: поиск с объединением взвешенного максимума по каждой модальности (Max-per-Modality) и фиксированным выбором модальностей\n")
+        f.write("- **Мультимодальный (Максимум, Без отбора модальностей)**: поиск Max-per-Modality, когда все модальности активны для любого запроса\n\n")
 
         f.write("> [!IMPORTANT]\n")
-        f.write("> **Важное примечание**: Бенчмарк оценивает качество этапа извлечения (retrieval) и слияния (fusion) на тестовом наборе из 50 запросов при фиксированной (записанной вручную) декомпозиции запросов. Качество автоматического Query Router на базе Gemini в данный benchmark не входит. Метрика Hit@K рассчитывается исключительно на уровне документов (видеофайлов), а не временных интервалов.\n\n")
+        f.write("> **Важное примечание**: Проверочный набор оценивает качество поиска и объединения результатов на 50 запросах при фиксированном (заданном вручную) выборе модальностей. Автоматический выбор модальностей моделью Gemini в данную оценку не входил. Метрика Hit@K рассчитывается на уровне видеофайлов, а не временных интервалов.\n\n")
 
         f.write("## Параметры окружения и воспроизводимости\n\n")
         f.write(f"- **Git Commit**: `{git_commit}`\n")
-        f.write(f"- **Config SHA-256**: `{config_sha}` (файл `configs/config.yaml`)\n")
+        f.write(f"- **Конфигурация (SHA-256)**: `{config_sha}` (файл `configs/config.yaml`)\n")
+        f.write(f"- **Проверочные запросы (SHA-256)**: `{tasks_sha}` (файл `benchmark/tasks.json`)\n")
+        f.write(f"- **Манифест набора данных (SHA-256)**: `{dataset_sha}` (файл `benchmark/dataset_manifest.json`)\n")
+        f.write("- **Способ вычисления векторных представлений**: локальный, через `Qwen3-Embedding-0.6B`\n")
+        f.write("- **Устройство**: MPS (Apple Silicon GPU)\n")
         f.write(f"- **Всего запросов**: {len(tasks)}\n")
-        f.write("- **База векторов**: Qdrant (локальная база)\n\n")
+        f.write("- **База векторов**: Qdrant (локальный запуск)\n\n")
 
-        f.write("## 1. Сводные метрики (уровень видеофайлов)\n\n")
-        f.write("| Стратегия | Метод слияния | Routing | Hit@1 | Hit@3 | Local retrieval pipeline latency |\n")
+        f.write("## 1. Сводные метрики (Hit@K на уровне видео)\n\n")
+        f.write("| Стратегия | Метод объединения | Выбор модальностей | Hit@1 | Hit@3 | Локальное время поиска |\n")
         f.write("| :--- | :--- | :---: | :---: | :---: | :---: |\n")
-        f.write(f"| ASR-only | Sum | Нет | {asr_metrics['hit_at_1']:.2%} | {asr_metrics['hit_at_3']:.2%} | {asr_metrics['local_retrieval_latency']:.3f}s |\n")
-        f.write(f"| Multimodal | Sum | Fixed | {mm_sum_metrics['hit_at_1']:.2%} | {mm_sum_metrics['hit_at_3']:.2%} | {mm_sum_metrics['local_retrieval_latency']:.3f}s |\n")
-        f.write(f"| Multimodal | RRF | Fixed | {mm_rrf_metrics['hit_at_1']:.2%} | {mm_rrf_metrics['hit_at_3']:.2%} | {mm_rrf_metrics['local_retrieval_latency']:.3f}s |\n")
-        f.write(f"| **Multimodal** | **Max-per-Modality** | **Fixed** | **{mm_max_metrics['hit_at_1']:.2%}** | **{mm_max_metrics['hit_at_3']:.2%}** | {mm_max_metrics['local_retrieval_latency']:.3f}s |\n")
-        f.write(f"| Multimodal | Max-per-Modality | Нет | {mm_max_norouting_metrics['hit_at_1']:.2%} | {mm_max_norouting_metrics['hit_at_3']:.2%} | {mm_max_norouting_metrics['local_retrieval_latency']:.3f}s |\n\n")
+        f.write(f"| Только ASR | Сумма | Нет | {asr_metrics['hit_at_1']:.2%} | {asr_metrics['hit_at_3']:.2%} | {asr_metrics['local_retrieval_latency']:.3f}s |\n")
+        f.write(f"| Мультимодальный | Простая сумма | Задан | {mm_sum_metrics['hit_at_1']:.2%} | {mm_sum_metrics['hit_at_3']:.2%} | {mm_sum_metrics['local_retrieval_latency']:.3f}s |\n")
+        f.write(f"| Мультимодальный | RRF | Задан | {mm_rrf_metrics['hit_at_1']:.2%} | {mm_rrf_metrics['hit_at_3']:.2%} | {mm_rrf_metrics['local_retrieval_latency']:.3f}s |\n")
+        f.write(f"| **Мультимодальный** | **Максимум каждой модальности** | **Задан** | **{mm_max_metrics['hit_at_1']:.2%}** | **{mm_max_metrics['hit_at_3']:.2%}** | {mm_max_metrics['local_retrieval_latency']:.3f}s |\n")
+        f.write(f"| Мультимодальный | Максимум каждой модальности | Нет | {mm_max_norouting_metrics['hit_at_1']:.2%} | {mm_max_norouting_metrics['hit_at_3']:.2%} | {mm_max_norouting_metrics['local_retrieval_latency']:.3f}s |\n\n")
 
         f.write("## 2. Метрики по категориям запросов (Hit@1)\n\n")
-        f.write("| Категория | Кол-во | ASR-only | Multimodal (Sum) | Multimodal (RRF) | Multimodal (Max-per-Modality) | Multimodal (Max, No Routing) |\n")
+        f.write("| Категория | Кол-во | Только ASR | Простая сумма | RRF | Максимум каждой модальности | Максимум без отбора |\n")
         f.write("| :--- | :---: | :---: | :---: | :---: | :---: | :---: |\n")
 
         for cat in ["speech", "ocr", "visual"]:
@@ -335,7 +341,7 @@ def main() -> None:
             )
 
         f.write("\n## 3. Детальные результаты по запросам (Топ-1 найденное видео)\n\n")
-        f.write("| Запрос | Категория | Ожидаемое | ASR-only | Multimodal (Sum) | Multimodal (RRF) | Multimodal (Max) | Multimodal (Max, No Routing) |\n")
+        f.write("| Запрос | Категория | Ожидаемое | Только ASR | Простая сумма | RRF | Максимум каждой модальности | Максимум без отбора |\n")
         f.write("| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |\n")
 
         for i in range(len(tasks)):
@@ -350,10 +356,10 @@ def main() -> None:
             f.write(f"| \"{q}\" | `{cat.upper()}` | `{exp}` | {get_top1(asr_metrics)} | {get_top1(mm_sum_metrics)} | {get_top1(mm_rrf_metrics)} | {get_top1(mm_max_metrics)} | {get_top1(mm_max_norouting_metrics)} |\n")
 
         f.write("\n## 4. Анализ и выводы\n\n")
-        f.write(f"1. **Сравнение стратегий слияния**: На текущем валидационном наборе с зафиксированной декомпозицией запросов Max-per-Modality в сочетании с Query Routing показал наилучший точечный результат: Hit@1 вырос до {mm_max_metrics['hit_at_1']:.2%} (+{((mm_max_metrics['hit_at_1'] - asr_metrics['hit_at_1']) * 100):.0f} процентных пунктов относительно baseline {asr_metrics['hit_at_1']:.2%}), а Hit@3 достиг {mm_max_metrics['hit_at_3']:.2%} (+{((mm_max_metrics['hit_at_3'] - asr_metrics['hit_at_3']) * 100):.0f} процентных пунктов относительно baseline {asr_metrics['hit_at_3']:.2%}). Разница с RRF ({mm_rrf_metrics['hit_at_1']:.2%} по Hit@1, {mm_rrf_metrics['hit_at_3']:.2%} по Hit@3) составляет всего 1 запрос из 50, поэтому превосходство не является убедительным.\n")
-        f.write(f"2. **Влияние Query Routing (Абляция)**: На валидационном наборе выбор активных модальностей (Query Routing) совместно с методом Max-per-Modality повысил Hit@1 с {mm_max_norouting_metrics['hit_at_1']:.2%} (без роутинга) до {mm_max_metrics['hit_at_1']:.2%}. Это показывает пользу ограничения активных каналов для снижения влияния шума нерелевантных модальностей. Качество автоматического Gemini-router в эксперимент не входило.\n")
-        f.write(f"3. **Влияние RRF и Sum**: Векторное слияние с Query Routing даже при простом суммировании косинусных расстояний (Sum) превосходит ASR-only baseline по Hit@3 ({mm_sum_metrics['hit_at_3']:.2%} против {asr_metrics['hit_at_3']:.2%}). Использование рангового слияния RRF компенсирует разницу шкал косинусной близости и повышает Hit@1 до {mm_rrf_metrics['hit_at_1']:.2%}, но уступает Max-per-Modality по обоим показателям.\n")
-        f.write(f"4. **Задержка поиска (Local Latency)**: Средняя задержка локального поиска (включая векторизацию и слияние) составляет для baseline {asr_metrics['local_retrieval_latency']:.3f}s, а для мультимодальных режимов колеблется в диапазоне от {min(mm_sum_metrics['local_retrieval_latency'], mm_rrf_metrics['local_retrieval_latency'], mm_max_metrics['local_retrieval_latency']):.3f}s до {max(mm_sum_metrics['local_retrieval_latency'], mm_rrf_metrics['local_retrieval_latency'], mm_max_metrics['local_retrieval_latency']):.3f}s.\n")
+        f.write(f"1. **Сравнение стратегий объединения**: На проверочном наборе с зафиксированной декомпозицией запросов объединение по максимуму (Max-per-Modality) в сочетании с выбором модальностей показало наилучший точечный результат: Hit@1 вырос до {mm_max_metrics['hit_at_1']:.2%} (+{((mm_max_metrics['hit_at_1'] - asr_metrics['hit_at_1']) * 100):.0f} процентных пунктов относительно базового варианта {asr_metrics['hit_at_1']:.2%}), а Hit@3 достиг {mm_max_metrics['hit_at_3']:.2%} (+{((mm_max_metrics['hit_at_3'] - asr_metrics['hit_at_3']) * 100):.0f} процентных пунктов относительно базового варианта {asr_metrics['hit_at_3']:.2%}). Разница с RRF ({mm_rrf_metrics['hit_at_1']:.2%} по Hit@1, {mm_rrf_metrics['hit_at_3']:.2%} по Hit@3) составляет всего 1 запрос из 50, поэтому превосходство не является убедительным. Разница между двумя лучшими методами составляет один запрос из 50.\n")
+        f.write(f"2. **Влияние выбора модальностей (Абляция)**: На проверочном наборе выбор активных модальностей совместно с методом Max-per-Modality повысил Hit@1 с {mm_max_norouting_metrics['hit_at_1']:.2%} (без выбора модальностей) до {mm_max_metrics['hit_at_1']:.2%}. Это показывает пользу ограничения активных каналов для снижения влияния шума нерелевантных модальностей. Автоматический выбор модальностей моделью Gemini в этом эксперименте не оценивался.\n")
+        f.write(f"3. **Влияние RRF и простой суммы**: Мультимодальный поиск с выбором модальностей даже при простом суммировании оценок косинусного сходства (Сумма) превосходит базовый вариант по Hit@3 ({mm_sum_metrics['hit_at_3']:.2%} против {asr_metrics['hit_at_3']:.2%}). Использование рангового слияния RRF компенсирует разницу шкал косинусной близости и повышает Hit@1 до {mm_rrf_metrics['hit_at_1']:.2%}, но уступает методу Max-per-Modality по обоим показателям.\n")
+        f.write(f"4. **Время поиска (Локальное время)**: Среднее время локального поиска (включая векторизацию и объединение результатов) составляет для базового варианта {asr_metrics['local_retrieval_latency']:.3f}s, а для мультимодальных режимов колеблется в диапазоне от {min(mm_sum_metrics['local_retrieval_latency'], mm_rrf_metrics['local_retrieval_latency'], mm_max_metrics['local_retrieval_latency']):.3f}s до {max(mm_sum_metrics['local_retrieval_latency'], mm_rrf_metrics['local_retrieval_latency'], mm_max_metrics['local_retrieval_latency']):.3f}s.\n")
 
     print(f"\nРезультаты бенчмарка сохранены в: {output_path}")
 

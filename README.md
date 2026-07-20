@@ -95,7 +95,7 @@ docker run -p 8000:8000 --env-file .env multimodal-video-search
 
 ## 8. Результаты и метрики
 - **ASR-only (Baseline)**: Hit@1 = 68.00%, Hit@3 = 82.00%
-- **Multimodal (Max-per-Modality)**: Hit@1 = **88.00%**, Hit@3 = **96.00%** (на тестовом наборе из 50 запросов Max-per-Modality совместно с Query Routing повысил Hit@1 на 20 процентных пунктов относительно baseline)
+- **Multimodal (Max-per-Modality)**: Hit@1 = **88.00%**, Hit@3 = **96.00%** (на валидационном наборе из 50 запросов с зафиксированной декомпозицией выбор активных модальностей совместно с методом Max-per-Modality повысил Hit@1 на +20 процентных пунктов относительно baseline)
 - **Multimodal (RRF слияние)**: Hit@1 = 86.00%, Hit@3 = 94.00%
 - **Multimodal (Sum слияние)**: Hit@1 = 68.00%, Hit@3 = 94.00%
 *Подробный разбор эксперимента приведен в файле `benchmark_results.md`.*

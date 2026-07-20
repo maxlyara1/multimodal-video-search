@@ -75,7 +75,8 @@ search:
   final_top_k: 5
   merge_gap_sec: 6.0
   score_threshold: 0.3
-  fusion_method: rrf
+  # Max-per-Modality выбран как текущая демонстрационная конфигурация по результатам development-бенчмарка
+  fusion_method: max_per_modality
   rrf_k: 60
   modality_weights:
     asr: 1.0

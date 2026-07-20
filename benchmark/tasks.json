@@ -24,7 +24,7 @@
     "expected_video": "bomber",
     "category": "ocr",
     "decomposition": {
-      "asr_query": "Михаил Политковский Стилист",
+      "asr_query": "Стилист Михаил Политковский в титрах",
       "visual_queries": [],
       "visual_mode": "all"
     }
@@ -161,8 +161,8 @@
     "decomposition": {
       "asr_query": null,
       "visual_queries": [
-        "cooking meatballs in a pan",
-        "hamburger patti in a pan"
+        "person frying patties on pan",
+        "frying kotleti"
       ],
       "visual_mode": "all"
     }
@@ -294,7 +294,7 @@
     "expected_video": "plombir",
     "category": "speech",
     "decomposition": {
-      "asr_query": "нельзя доводить до кипения иначе желтки могут свернуться домашний пломбир",
+      "asr_query": "желтки с сахаром домашнего пломбира",
       "visual_queries": [],
       "visual_mode": "all"
     }
@@ -340,7 +340,7 @@
     "expected_video": "rubashka",
     "category": "speech",
     "decomposition": {
-      "asr_query": "ненадолго поддержать ее в пластиковом пакете проглаживать воротник рубашка",
+      "asr_query": "продолжительность одной чашки кофе поддержать ее в пластиковом пакете",
       "visual_queries": [],
       "visual_mode": "all"
     }
@@ -452,7 +452,7 @@
     "expected_video": "taco",
     "category": "speech",
     "decomposition": {
-      "asr_query": "Всем привет Вы на канале Макареич Кичин с вами я Евгений",
+      "asr_query": "Макареич Кичин Евгений",
       "visual_queries": [],
       "visual_mode": "all"
     }

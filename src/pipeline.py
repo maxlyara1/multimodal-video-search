@@ -861,7 +861,7 @@ class VideoRAGPipeline:
         payload = {
             modality: [
                 {
-                    "video_file": record.video_file,
+                    "video_file": f"data/videos/{Path(record.video_file).name}",
                     "modality": record.modality,
                     "start": record.start,
                     "end": record.end,
@@ -888,9 +888,13 @@ class VideoRAGPipeline:
                 if "det_type" in metadata:
                     metadata["visual_evidence_type"] = metadata.pop("det_type")
 
+                # Всегда приводим путь к относительному виду data/videos/<filename>
+                video_filename = Path(record["video_file"]).name
+                rel_video_file = f"data/videos/{video_filename}"
+
                 loaded[mod_key].append(
                     ModalityRecord(
-                        video_file=record["video_file"],
+                        video_file=rel_video_file,
                         modality=mod,
                         start=float(record["start"]),
                         end=float(record["end"]),

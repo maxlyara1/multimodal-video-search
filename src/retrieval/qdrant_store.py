@@ -111,7 +111,7 @@ class QdrantStore:
         ).points
         return [
             SearchHit(
-                video_file=point.payload["video_file"],
+                video_file=f"data/videos/{Path(point.payload['video_file']).name}",
                 modality=point.payload["modality"],
                 start=float(point.payload["start"]),
                 end=float(point.payload["end"]),

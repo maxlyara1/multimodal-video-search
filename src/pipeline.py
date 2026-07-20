@@ -154,7 +154,7 @@ class VideoRAGPipeline:
     def _get_extractors(self) -> dict[str, object]:
         from src.modules import (
             EasyOCROnScreenExtractor,
-            SceneGraphDETExtractor,
+            VisualCaptionExtractor,
             WhisperASRExtractor,
         )
 
@@ -177,12 +177,13 @@ class VideoRAGPipeline:
                 min_confidence=self.cfg["ocr"].get("min_confidence", 0.3),
                 device=runtime_cfg["device"],
             )
-        if self.cfg["det"].get("enabled", True):
-            self._extractors["det"] = SceneGraphDETExtractor(
-                self.cfg["det"]["model"],
-                frame_step_sec=self.cfg["det"].get("frame_step_sec", 5.0),
-                max_new_tokens=self.cfg["det"].get("max_new_tokens", 60),
-                spacy_model=self.cfg["det"].get("spacy_model", "en_core_web_sm"),
+        if self.cfg["visual"].get("enabled", True) or self.cfg.get("det", {}).get("enabled", True):
+            visual_cfg = self.cfg.get("visual") or self.cfg.get("det", {})
+            self._extractors["visual"] = VisualCaptionExtractor(
+                visual_cfg["model"],
+                frame_step_sec=visual_cfg.get("frame_step_sec", 5.0),
+                max_new_tokens=visual_cfg.get("max_new_tokens", 60),
+                spacy_model=visual_cfg.get("spacy_model", "en_core_web_sm"),
                 device=runtime_cfg["device"],
                 torch_dtype=runtime_cfg["torch_dtype"],
             )
@@ -232,8 +233,12 @@ class VideoRAGPipeline:
 
     def enabled_modalities(self) -> list[str]:
         modalities: list[str] = []
-        for modality in ("asr", "ocr", "det"):
-            if self.cfg.get(modality, {}).get("enabled", False):
+        for modality in ("asr", "ocr", "visual"):
+            cfg_mod = "visual" if modality == "visual" else modality
+            enabled = self.cfg.get(cfg_mod, {}).get("enabled", False)
+            if not enabled and cfg_mod == "visual":
+                enabled = self.cfg.get("det", {}).get("enabled", False)
+            if enabled:
                 modalities.append(modality)
         return modalities
 
@@ -257,7 +262,7 @@ class VideoRAGPipeline:
     _MODALITY_UNITS: dict[str, str] = {
         "asr": "сегм. речи",
         "ocr": "кадров с текстом",
-        "det": "кадров с описанием",
+        "visual": "кадров с описанием",
     }
 
     def _extract_and_save(
@@ -612,16 +617,16 @@ class VideoRAGPipeline:
             decomposition = (
                 query_decoupler.decouple(query)
                 if query_decoupler is not None
-                else QueryDecomposition(original_query=query, asr_query=query, det_queries=[], det_mode="relation")
+                else QueryDecomposition(original_query=query, asr_query=query, visual_queries=[], visual_mode="all")
             )
         except Exception as e:
             logger.warning(f"Failed to initialize or decouple query with GeminiQueryDecoupler: {e}. Falling back to default decomposition.")
-            decomposition = QueryDecomposition(original_query=query, asr_query=query, det_queries=[], det_mode="relation")
+            decomposition = QueryDecomposition(original_query=query, asr_query=query, visual_queries=[], visual_mode="all")
 
         modality_queries = {
             "asr": self._build_text_retrieval_query(query, decomposition.asr_query),
             "ocr": self._build_text_retrieval_query(query, decomposition.asr_query),
-            "det": self._build_det_query(decomposition),
+            "visual": self._build_visual_query(decomposition),
         }
 
         all_hits: list[SearchHit] = []
@@ -634,11 +639,11 @@ class VideoRAGPipeline:
             if not modality_query.strip():
                 continue
             query_vector = embedder.embed_query(modality_query)
-            filter_payload = (
-                {"det_type": self._det_type_for_mode(decomposition.det_mode)}
-                if modality == "det"
-                else None
-            )
+            filter_payload = None
+            if modality == "visual":
+                evidence_type = self._visual_type_for_mode(decomposition.visual_mode)
+                if evidence_type:
+                    filter_payload = {"visual_evidence_type": evidence_type}
             hits = store.search(modality, query_vector, top_k=top_k, filter_payload=filter_payload, prefix=collection_prefix)
             if score_threshold is not None:
                 hits = [hit for hit in hits if hit.score >= float(score_threshold)]
@@ -660,33 +665,36 @@ class VideoRAGPipeline:
         )
         return decomposition, candidates, answer, model_name, key_index
 
-    def _build_det_query(self, decomposition: QueryDecomposition) -> str:
-        if not decomposition.det_queries:
+    def _build_visual_query(self, decomposition: QueryDecomposition) -> str:
+        queries = getattr(decomposition, "visual_queries", getattr(decomposition, "det_queries", []))
+        if not queries:
             return decomposition.original_query
-        return ", ".join(part for part in decomposition.det_queries if part)
+        return ", ".join(part for part in queries if part)
 
     @staticmethod
-    def _det_type_for_mode(det_mode: str) -> str:
-        if det_mode == "number":
-            return "number"
-        if det_mode == "location":
-            return "location"
-        return "relation"
+    def _visual_type_for_mode(visual_mode: str) -> str | None:
+        if visual_mode in {"number", "location", "relation"}:
+            return visual_mode
+        return None
 
     def _records_for_index(self, modality: str, records: list[ModalityRecord]) -> list[ModalityRecord]:
-        if modality != "det":
+        if modality != "visual" and modality != "det":
             return records
 
         normalized: list[ModalityRecord] = []
         for record in records:
-            if record.metadata.get("det_type"):
+            record.modality = "visual"
+            if record.metadata.get("visual_evidence_type"):
+                normalized.append(record)
+            elif record.metadata.get("det_type"):
+                record.metadata["visual_evidence_type"] = record.metadata.pop("det_type")
                 normalized.append(record)
             else:
-                normalized.extend(self._split_det_record_by_type(record))
+                normalized.extend(self._split_visual_record_by_type(record))
         return normalized
 
     @staticmethod
-    def _split_det_record_by_type(record: ModalityRecord) -> list[ModalityRecord]:
+    def _split_visual_record_by_type(record: ModalityRecord) -> list[ModalityRecord]:
         metadata = record.metadata or {}
         texts: dict[str, str] = {}
 
@@ -720,13 +728,13 @@ class VideoRAGPipeline:
         return [
             ModalityRecord(
                 video_file=record.video_file,
-                modality=record.modality,
+                modality="visual",
                 start=record.start,
                 end=record.end,
                 text=text,
-                metadata={**metadata, "det_type": det_type},
+                metadata={**metadata, "visual_evidence_type": visual_evidence_type},
             )
-            for det_type, text in texts.items()
+            for visual_evidence_type, text in texts.items()
         ]
 
     @staticmethod
@@ -740,10 +748,23 @@ class VideoRAGPipeline:
     def _merge_hits(self, hits: list[SearchHit]) -> list[CandidateWindow]:
         gap = float(self.cfg["search"].get("merge_gap_sec", 6.0))
         weights = self.cfg["search"].get("modality_weights", {})
+        fusion_method = self.cfg["search"].get("fusion_method", "rrf")
+        rrf_k = int(self.cfg["search"].get("rrf_k", 60))
+        
+        # Получаем ранги хитов внутри каждой модальности для RRF
+        ranked_hits = {}
+        hits_by_modality = {}
+        for h in hits:
+            hits_by_modality.setdefault(h.modality, []).append(h)
+        for modality, mod_hits in hits_by_modality.items():
+            mod_hits.sort(key=lambda x: x.score, reverse=True)
+            for rank, h in enumerate(mod_hits, 1):
+                ranked_hits[id(h)] = rank
+
         candidates: list[CandidateWindow] = []
 
+        # Сначала объединяем перекрывающиеся интервалы в CandidateWindow
         for hit in sorted(hits, key=lambda item: (item.video_file, item.start, item.end, -item.score)):
-            weight = float(weights.get(hit.modality, 1.0))
             merged = False
             for candidate in candidates:
                 if candidate.video_file != hit.video_file:
@@ -751,7 +772,6 @@ class VideoRAGPipeline:
                 if hit.start <= candidate.end + gap and hit.end >= candidate.start - gap:
                     candidate.start = min(candidate.start, hit.start)
                     candidate.end = max(candidate.end, hit.end)
-                    candidate.score += hit.score * weight
                     candidate.hits.append(hit)
                     merged = True
                     break
@@ -761,10 +781,42 @@ class VideoRAGPipeline:
                         video_file=hit.video_file,
                         start=hit.start,
                         end=hit.end,
-                        score=hit.score * weight,
+                        score=0.0, # Будет вычислено ниже
                         hits=[hit],
                     )
                 )
+
+        # Вычисляем score для каждого CandidateWindow в соответствии с выбранным методом слияния
+        for candidate in candidates:
+            weight_by_modality = {}
+            for modality in ("asr", "ocr", "visual", "det"):
+                w = float(weights.get(modality, 1.0))
+                weight_by_modality[modality] = w
+
+            if fusion_method == "rrf":
+                # RRF: сумма максимальных RRF вкладов по модальностям
+                modality_best_rrf = {}
+                for hit in candidate.hits:
+                    rank = ranked_hits.get(id(hit), 1)
+                    w = weight_by_modality.get(hit.modality, 1.0)
+                    rrf_val = w / (rrf_k + rank)
+                    if rrf_val > modality_best_rrf.get(hit.modality, 0.0):
+                        modality_best_rrf[hit.modality] = rrf_val
+                candidate.score = sum(modality_best_rrf.values())
+
+            elif fusion_method == "max_norm":
+                # Max-per-modality: сумма максимальных сырых оценок, взвешенных
+                modality_best_score = {}
+                for hit in candidate.hits:
+                    w = weight_by_modality.get(hit.modality, 1.0)
+                    weighted_score = hit.score * w
+                    if weighted_score > modality_best_score.get(hit.modality, 0.0):
+                        modality_best_score[hit.modality] = weighted_score
+                candidate.score = sum(modality_best_score.values())
+
+            else:
+                # Baseline (sum): простое суммирование сырых оценок с весами
+                candidate.score = sum(hit.score * weight_by_modality.get(hit.modality, 1.0) for hit in candidate.hits)
 
         candidates.sort(key=lambda item: item.score, reverse=True)
         return self._deduplicate_candidates(candidates)
@@ -810,17 +862,24 @@ class VideoRAGPipeline:
         payload = json.loads(path.read_text(encoding="utf-8"))
         loaded: dict[str, list[ModalityRecord]] = {}
         for modality, records in payload.items():
-            loaded[modality] = [
-                ModalityRecord(
-                    video_file=record["video_file"],
-                    modality=record["modality"],
-                    start=float(record["start"]),
-                    end=float(record["end"]),
-                    text=record["text"],
-                    metadata=record.get("metadata") or {},
+            mod_key = "visual" if modality == "det" else modality
+            loaded[mod_key] = []
+            for record in records:
+                mod = "visual" if record["modality"] == "det" else record["modality"]
+                metadata = record.get("metadata") or {}
+                if "det_type" in metadata:
+                    metadata["visual_evidence_type"] = metadata.pop("det_type")
+                
+                loaded[mod_key].append(
+                    ModalityRecord(
+                        video_file=record["video_file"],
+                        modality=mod,
+                        start=float(record["start"]),
+                        end=float(record["end"]),
+                        text=record["text"],
+                        metadata=metadata,
+                    )
                 )
-                for record in records
-            ]
         return loaded
 
     def close(self) -> None:

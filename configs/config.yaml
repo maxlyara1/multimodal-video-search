@@ -49,12 +49,12 @@ ocr:
   frame_step_sec: 5.0
   min_confidence: 0.3
 
-det:
+visual:
   enabled: true
   model: Salesforce/blip-image-captioning-base
   frame_step_sec: 5.0
   max_new_tokens: 60
-  # BLIP генерирует английские описания кадров; spaCy используется только для DET scene graph.
+  # BLIP генерирует английские описания кадров; spaCy используется только для visual scene graph.
   spacy_model: en_core_web_sm
 
 indexing:
@@ -75,9 +75,12 @@ search:
   final_top_k: 5
   merge_gap_sec: 6.0
   score_threshold: 0.3
+  fusion_method: rrf
+  rrf_k: 60
   modality_weights:
     asr: 1.0
     ocr: 0.8
+    visual: 0.7
     det: 0.7
 
 answering:

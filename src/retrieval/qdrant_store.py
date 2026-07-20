@@ -69,8 +69,8 @@ class QdrantStore:
                 "text": record.text,
                 "metadata": record.metadata,
             }
-            if record.metadata.get("det_type"):
-                payload["det_type"] = record.metadata["det_type"]
+            if record.metadata.get("visual_evidence_type"):
+                payload["visual_evidence_type"] = record.metadata["visual_evidence_type"]
             points.append(
                 models.PointStruct(
                     id=_stable_point_id(record),

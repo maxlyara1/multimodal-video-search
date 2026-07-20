@@ -1,9 +1,9 @@
 from .asr import WhisperASRExtractor
-from .det import SceneGraphDETExtractor
+from .visual import VisualCaptionExtractor
 from .ocr import EasyOCROnScreenExtractor
 
 __all__ = [
     "WhisperASRExtractor",
-    "SceneGraphDETExtractor",
+    "VisualCaptionExtractor",
     "EasyOCROnScreenExtractor",
 ]

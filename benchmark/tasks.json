@@ -1,0 +1,52 @@
+[
+  {
+    "query": "Где говорят про роблокс?",
+    "expected_video": "roblox",
+    "category": "speech"
+  },
+  {
+    "query": "Рецепт итальянской пасты карбонара с панчеттой и желтками",
+    "expected_video": "carbonara",
+    "category": "speech"
+  },
+  {
+    "query": "Как правильно завязать галстук пошагово",
+    "expected_video": "galstuk",
+    "category": "speech"
+  },
+  {
+    "query": "Как приготовить домашнюю пиццу в духовке",
+    "expected_video": "pizza",
+    "category": "speech"
+  },
+  {
+    "query": "Как приготовить блины на молоке",
+    "expected_video": "blini",
+    "category": "speech"
+  },
+  {
+    "query": "Вино марки Duckhorn Vineyards",
+    "expected_video": "vino",
+    "category": "ocr"
+  },
+  {
+    "query": "Продюсер Василий Нефедкин в титрах",
+    "expected_video": "obuv",
+    "category": "ocr"
+  },
+  {
+    "query": "Человек стоит перед самолетом",
+    "expected_video": "bomber",
+    "category": "visual"
+  },
+  {
+    "query": "Люди стоят около танка на заднем плане",
+    "expected_video": "bomber",
+    "category": "visual"
+  },
+  {
+    "query": "Бутылки вина на столе",
+    "expected_video": "vino",
+    "category": "visual"
+  }
+]

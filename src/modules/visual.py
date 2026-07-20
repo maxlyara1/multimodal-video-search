@@ -106,7 +106,7 @@ def _extract_scene_graph(caption: str, nlp: spacy.language.Language) -> tuple[li
     return objects, obj_counting, relations, auxiliary_texts
 
 
-class SceneGraphDETExtractor:
+class VisualCaptionExtractor:
     def __init__(
         self,
         model_name: str,
@@ -123,7 +123,7 @@ class SceneGraphDETExtractor:
         self.device = detect_torch_device(device)
         self.dtype = resolve_torch_dtype(torch_dtype, self.device)
 
-        logger.info("DET: загрузка BLIP '%s' на %s...", model_name, self.device)
+        logger.info("Visual: загрузка BLIP '%s' на %s...", model_name, self.device)
         self.processor = BlipProcessor.from_pretrained(model_name)
         self.model = BlipForConditionalGeneration.from_pretrained(
             model_name,
@@ -132,7 +132,7 @@ class SceneGraphDETExtractor:
         self.model.eval()
         self.frame_sampler = RobustVideoFrameSampler(decoder_threads=1)
         self.nlp = spacy.load(spacy_model)
-        logger.info("DET: модель готова (шаг кадров %.1f сек)", self.frame_step_sec)
+        logger.info("Visual: модель готова (шаг кадров %.1f сек)", self.frame_step_sec)
 
     def _generate_caption(self, image: Image.Image) -> str:
         inputs = self.processor(images=image, return_tensors="pt").to(self.device)
@@ -150,7 +150,7 @@ class SceneGraphDETExtractor:
         )
         total = len(frames)
         telemetry = ProgressTelemetry(
-            stage_name="det",
+            stage_name="visual",
             total_items=total,
             device=str(self.device),
         )
@@ -172,15 +172,15 @@ class SceneGraphDETExtractor:
                     for rel in relations
                 ],
             }
-            for det_type, text in auxiliary_texts.items():
+            for visual_evidence_type, text in auxiliary_texts.items():
                 results.append(
                     ModalityRecord(
                         video_file=str(video_path),
-                        modality="det",
+                        modality="visual",
                         start=round(frame.timestamp, 3),
                         end=round(min(duration, frame.timestamp + self.frame_step_sec), 3),
                         text=text,
-                        metadata={**base_metadata, "det_type": det_type},
+                        metadata={**base_metadata, "visual_evidence_type": visual_evidence_type},
                     )
                 )
 

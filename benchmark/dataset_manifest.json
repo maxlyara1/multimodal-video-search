@@ -1,0 +1,5 @@
+{
+  "dataset_name": "Junior ML Contest Video Dataset",
+  "num_videos": 30,
+  "description": "Тестовый набор видеофайлов (включая roblox, carbonara, galstuk, pizza, blini, vino, obuv, bomber и другие) для оценки качества мультимодального поиска."
+}

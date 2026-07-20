@@ -82,13 +82,13 @@ async def ask_query(request: QueryRequest):
     try:
         logger.info(f"Processing query: {request.query} on collection: {request.collection_prefix}")
         try:
-            decomposition, candidates, answer, model_name, key_index = pipeline.answer(
-                request.query, collection_prefix=request.collection_prefix
+            decomposition, candidates, answer, model_name, key_index = await asyncio.to_thread(
+                pipeline.answer, request.query, request.collection_prefix
             )
         except Exception as e:
             logger.warning(f"Generation or decoupling failed ({e}). Falling back to vector-search only.")
-            decomposition, candidates = pipeline.search(
-                request.query, collection_prefix=request.collection_prefix
+            decomposition, candidates = await asyncio.to_thread(
+                pipeline.search, request.query, request.collection_prefix
             )
             answer = "Внимание: Генерация текстового ответа недоступна (требуется настроить GOOGLE_API_KEY в файле .env). Ниже представлены результаты поиска по локальной векторной базе Qdrant."
             model_name = "fallback-search-only"
@@ -112,7 +112,6 @@ async def ask_query(request: QueryRequest):
             
             serialized_candidates.append({
                 "video_file": video_filename,
-                "video_full_path": str(c.video_file),
                 "start": c.start,
                 "end": c.end,
                 "score": c.score,
@@ -126,14 +125,14 @@ async def ask_query(request: QueryRequest):
             "key_index": key_index,
             "decomposition": {
                 "asr_query": decomposition.asr_query or "",
-                "det_queries": decomposition.det_queries or [],
-                "det_mode": decomposition.det_mode or "relation"
+                "visual_queries": getattr(decomposition, "visual_queries", getattr(decomposition, "det_queries", [])),
+                "visual_mode": getattr(decomposition, "visual_mode", getattr(decomposition, "det_mode", "all"))
             },
             "candidates": serialized_candidates
         }
     except Exception as e:
         logger.error(f"Error answering query: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @app.get("/api/status")
 async def get_status():
@@ -162,22 +161,36 @@ async def upload_videos(files: list[UploadFile] = File(...)):
         saved_paths = []
         new_metadata = []
         
+        # Лимит размера файла (500 MB)
+        MAX_FILE_SIZE = 500 * 1024 * 1024
+        
         for file in files:
+            ext = Path(file.filename).suffix.lower()
+            if ext not in {".mp4", ".avi", ".mkv", ".mov"}:
+                raise HTTPException(status_code=400, detail=f"Unsupported file format: {ext}. Only MP4, AVI, MKV, MOV are allowed.")
+                
             upload_id = str(uuid.uuid4())[:8]
             safe_name = "".join(c if c.isalnum() or c in (".", "_", "-") else "_" for c in file.filename)
             filename = f"upload_{upload_id}_{safe_name}"
             dest_path = videos_dir / filename
             
+            # Считываем кусками для контроля размера
+            size = 0
             with open(dest_path, "wb") as buffer:
-                shutil.copyfileobj(file.file, buffer)
+                while chunk := await file.read(1024 * 1024):
+                    size += len(chunk)
+                    if size > MAX_FILE_SIZE:
+                        buffer.close()
+                        dest_path.unlink(missing_ok=True)
+                        raise HTTPException(status_code=413, detail="File too large. Maximum size is 500 MB.")
+                    buffer.write(chunk)
                 
             saved_paths.append(dest_path)
-            size_bytes = dest_path.stat().st_size
             
             new_metadata.append({
                 "filename": filename,
                 "original_name": file.filename,
-                "size_bytes": size_bytes,
+                "size_bytes": size,
                 "timestamp": time.time()
             })
             
@@ -194,9 +207,11 @@ async def upload_videos(files: list[UploadFile] = File(...)):
             "videos": new_metadata
         }
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error saving video files: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error saving video files")
 
 @app.get("/api/upload/events/{session_id}")
 async def upload_events(session_id: str):
@@ -229,7 +244,10 @@ async def upload_events(session_id: str):
             
         except Exception as e:
             logger.error(f"Error inside index streaming generator: {e}", exc_info=True)
-            yield f"data: {json.dumps({'step': 'error', 'status': 'failed', 'message': str(e)}, ensure_ascii=False)}\n\n"
+            yield f"data: {json.dumps({'step': 'error', 'status': 'failed', 'message': 'Indexing process failed'}, ensure_ascii=False)}\n\n"
+        finally:
+            active_sessions.pop(session_id, None)
+            logger.info(f"Session {session_id} removed from active_sessions.")
             
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 
@@ -271,6 +289,10 @@ async def clear_uploads():
 # Serve static files for frontend
 static_dir = Path("static")
 static_dir.mkdir(exist_ok=True)
+
+# Ensure data subdirectories exist for runtime persistence (prevent clean-clone crash)
+for d in ["data/videos", "data/artifacts", "data/qdrant"]:
+    Path(d).mkdir(parents=True, exist_ok=True)
 
 @app.get("/", response_class=HTMLResponse)
 @app.get("/index.html", response_class=HTMLResponse)

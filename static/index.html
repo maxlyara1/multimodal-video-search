@@ -737,7 +737,7 @@
 
         .hit-item.hit-asr { border-left: 4px solid var(--accent-purple); }
         .hit-item.hit-ocr { border-left: 4px solid var(--accent-green); }
-        .hit-item.hit-det { border-left: 4px solid var(--accent-yellow); }
+        .hit-item.hit-det, .hit-item.hit-visual { border-left: 4px solid var(--accent-yellow); }
 
         .hit-item:hover {
             border-color: rgba(255, 255, 255, 0.08);
@@ -779,7 +779,7 @@
             border: 1px solid var(--slide-border);
         }
 
-        .modality-badge.det {
+        .modality-badge.det, .modality-badge.visual {
             background: var(--visual-bg);
             color: var(--visual-text);
             border: 1px solid var(--visual-border);
@@ -1248,7 +1248,7 @@
                         </div>
                         <div class="progress-step" id="ustep-process">
                             <div class="step-dot"></div>
-                            <span>2. Распознавание речи, текста и кадров (ASR/OCR/DET)</span>
+                            <span>2. Распознавание речи, текста и кадров (ASR/OCR/Visual)</span>
                         </div>
                         <div class="progress-step" id="ustep-embed">
                             <div class="step-dot"></div>
@@ -1299,21 +1299,21 @@
                             </div>
                         </div>
                         
-                        <!-- Sub-Step DET -->
-                        <div class="sub-step" id="sub-det" style="display: flex; flex-direction: column; align-items: stretch; gap: 0.5rem;">
+                        <!-- Sub-Step Visual -->
+                        <div class="sub-step" id="sub-visual" style="display: flex; flex-direction: column; align-items: stretch; gap: 0.5rem;">
                             <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
                                 <div style="display: flex; align-items: center;">
                                     <span class="sub-step-icon">👁️</span>
-                                    <span class="sub-step-name">Описание сцен и кадров (DET via BLIP Captioning)</span>
+                                    <span class="sub-step-name">Описание сцен и кадров (Visual via BLIP Captioning)</span>
                                 </div>
-                                <span class="sub-step-status" id="sub-status-det">В ожидании</span>
+                                <span class="sub-step-status" id="sub-status-visual">В ожидании</span>
                             </div>
                             <!-- Mini progress bar -->
-                            <div class="sub-step-bar-container" id="sub-bar-container-det" style="width: 100%; height: 3px; background: rgba(255,255,255,0.03); border-radius: 2px; overflow: hidden; display: none;">
-                                <div class="sub-step-bar-fill" id="sub-bar-fill-det" style="width: 0%; height: 100%; background: #fbbf24; box-shadow: 0 0 6px #fbbf24; border-radius: 2px; transition: width 0.3s;"></div>
+                            <div class="sub-step-bar-container" id="sub-bar-container-visual" style="width: 100%; height: 3px; background: rgba(255,255,255,0.03); border-radius: 2px; overflow: hidden; display: none;">
+                                <div class="sub-step-bar-fill" id="sub-bar-fill-visual" style="width: 0%; height: 100%; background: #fbbf24; box-shadow: 0 0 6px #fbbf24; border-radius: 2px; transition: width 0.3s;"></div>
                             </div>
                             <!-- Live Telemetry Details -->
-                            <div class="sub-step-details" id="sub-details-det" style="font-size: 0.72rem; color: var(--text-muted); display: none; justify-content: space-between; flex-wrap: wrap; gap: 0.4rem; padding-left: 2rem;">
+                            <div class="sub-step-details" id="sub-details-visual" style="font-size: 0.72rem; color: var(--text-muted); display: none; justify-content: space-between; flex-wrap: wrap; gap: 0.4rem; padding-left: 2rem;">
                             </div>
                         </div>
                         
@@ -1715,18 +1715,19 @@
             document.getElementById('videoPlayerPanel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
 
-        // Russian keyword highlights
-        const keywords = ['ляра', 'максим', 'мага', 'ларионов', 'иларионов', 'матриц', 'банк', 'кущенко', 'сабирова', 'бородачева'];
-        
-        function highlightText(text) {
+        // HTML escaping helper
+        function escapeHtml(text) {
             if (!text) return '';
-            let escaped = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-            
-            keywords.forEach(kw => {
-                const regex = new RegExp(`(\\b${kw}[а-я]*|\\b${kw})`, 'gi');
-                escaped = escaped.replace(regex, '<span class="highlight-word">$1</span>');
-            });
-            return escaped;
+            return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        function highlightText(text) {
+            return escapeHtml(text);
         }
 
         // Smart parser to extract the very first timestamp mentioned in the LLM text answer
@@ -2026,12 +2027,13 @@
                         let modalityIcon = '📄';
                         if (hit.modality === 'ASR') { modalityLabel = 'Устное выступление'; modalityIcon = '🎙️'; }
                         else if (hit.modality === 'OCR') { modalityLabel = 'Данные с экрана / слайда'; modalityIcon = '🖥️'; }
-                        else if (hit.modality === 'DET') { modalityLabel = 'Визуальный кадр'; modalityIcon = '👁️'; }
+                        else if (hit.modality === 'DET' || hit.modality === 'visual') { modalityLabel = 'Визуальный кадр'; modalityIcon = '👁️'; }
 
+                        const modalityClass = hit.modality.toLowerCase();
                         hitsHTML += `
-                            <div class="hit-item hit-${hit.modality.toLowerCase()}">
+                            <div class="hit-item hit-${modalityClass}">
                                 <div class="hit-meta">
-                                    <span class="modality-badge ${hit.modality.toLowerCase()}">${modalityIcon} ${modalityLabel}</span>
+                                    <span class="modality-badge ${modalityClass}">${modalityIcon} ${modalityLabel}</span>
                                     <span class="seek-badge" style="padding: 0.2rem 0.7rem; font-size: 0.72rem;" onclick="playVideoSegment('${cand.video_file}', ${hit.start})" title="Смотреть с этой секунды">
                                         Смотреть с ${formatTime(hit.start)}
                                     </span>
@@ -2153,7 +2155,7 @@
             setUploadStepState('embed', 'pending');
 
             // Reset Sub steps (2026 monitoring)
-            const subSteps = ['asr', 'ocr', 'det', 'embed'];
+            const subSteps = ['asr', 'ocr', 'visual', 'embed'];
             subSteps.forEach(step => {
                 const el = document.getElementById(`sub-${step}`);
                 const statusEl = document.getElementById(`sub-status-${step}`);
@@ -2223,7 +2225,7 @@
                             setUploadStepState('embed', 'done');
                             
                             // Complete all sub-step visual elements
-                            const steps = ['asr', 'ocr', 'det', 'embed'];
+                            const steps = ['asr', 'ocr', 'visual', 'embed'];
                             steps.forEach(step => {
                                 const el = document.getElementById(`sub-${step}`);
                                 const statusEl = document.getElementById(`sub-status-${step}`);
@@ -2413,7 +2415,7 @@
                     card.innerHTML = `
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-cyan)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 2px;"><path d="M23 7a2 2 0 0 0-2-2h-4v10a3 3 0 0 1-3 3H3a3 3 0 0 1-3-3V3a3 3 0 0 1 3-3h7v10h10v7a2 2 0 0 0 2 2z"></path></svg>
                         <div style="overflow: hidden; flex: 1; display: flex; flex-direction: column; gap: 0.15rem;">
-                            <div style="font-size: 0.82rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #fff;" title="${file.original_name}">${file.original_name}</div>
+                            <div style="font-size: 0.82rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #fff;" title="${escapeHtml(file.original_name)}">${escapeHtml(file.original_name)}</div>
                             <div style="font-size: 0.72rem; color: var(--text-muted);">${sizeMB} MB</div>
                         </div>
                     `;

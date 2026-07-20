@@ -172,17 +172,17 @@ class GeminiQueryDecoupler:
     @staticmethod
     def _coerce_payload(query: str, payload: dict[str, object]) -> QueryDecomposition:
         asr_query = payload.get("asr_query")
-        det_queries = payload.get("det_queries") or payload.get("R_det") or []
-        det_mode = str(payload.get("det_mode") or payload.get("R_type") or "relation").lower()
-        if det_mode not in {"location", "number", "relation"}:
-            det_mode = "relation"
+        visual_queries = payload.get("visual_queries") or payload.get("det_queries") or payload.get("R_det") or []
+        visual_mode = str(payload.get("visual_mode") or payload.get("det_mode") or payload.get("R_type") or "all").lower()
+        if visual_mode not in {"location", "number", "relation", "all"}:
+            visual_mode = "all"
 
-        normalized_det: list[str] = []
-        for item in det_queries if isinstance(det_queries, list) else [det_queries]:
+        normalized_visual: list[str] = []
+        for item in visual_queries if isinstance(visual_queries, list) else [visual_queries]:
             text = " ".join(str(item).split()).strip()
-            if text and text not in normalized_det:
-                normalized_det.append(text)
-            if len(normalized_det) == 5:
+            if text and text not in normalized_visual:
+                normalized_visual.append(text)
+            if len(normalized_visual) == 5:
                 break
 
         normalized_asr = None
@@ -193,8 +193,8 @@ class GeminiQueryDecoupler:
         return QueryDecomposition(
             original_query=query,
             asr_query=normalized_asr,
-            det_queries=normalized_det,
-            det_mode=det_mode,
+            visual_queries=normalized_visual,
+            visual_mode=visual_mode,
         )
 
     def decouple(self, query: str) -> QueryDecomposition:
@@ -215,8 +215,8 @@ class GeminiQueryDecoupler:
             return QueryDecomposition(
                 original_query=query,
                 asr_query=query,
-                det_queries=[],
-                det_mode="relation",
+                visual_queries=[],
+                visual_mode="all",
             )
 
     def close(self) -> None:
@@ -397,15 +397,15 @@ class GeminiAnswerGenerator:
         return (
             "Ты финальный LVLM-блок пайплайна Video-RAG.\n"
             "Тебе переданы: исходный вопрос, декомпозиция запроса R, найденные вспомогательные тексты "
-            "A_m из ASR/OCR/DET и, если доступно, видеоклип верхнего найденного интервала.\n"
+            "A_m из ASR/OCR/Visual и, если доступно, видеоклип верхнего найденного интервала.\n"
             "Ответь на русском. Используй только переданные данные и визуальный контекст. "
             "Если данных недостаточно, прямо скажи, что точный ответ не найден.\n"
             "Обязательно укажи файл видео и интервал времени, если нашёл релевантный фрагмент.\n\n"
             f"Вопрос Q:\n{query}\n\n"
             "Декомпозиция R:\n"
             f"- R_asr: {decomposition.asr_query or 'null'}\n"
-            f"- R_det: {decomposition.det_queries}\n"
-            f"- R_type: {decomposition.det_mode}\n\n"
+            f"- R_visual: {getattr(decomposition, 'visual_queries', [])}\n"
+            f"- R_visual_mode: {getattr(decomposition, 'visual_mode', 'all')}\n\n"
             "Найденные вспомогательные тексты A_m, отобранные по релевантности и поданные хронологически:\n"
             f"{context_blocks or 'Нет найденных фрагментов.'}\n\n"
             "Формат ответа:\n"

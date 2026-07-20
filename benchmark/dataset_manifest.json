@@ -1,5 +1,317 @@
 {
   "dataset_name": "Junior ML Contest Video Dataset",
-  "num_videos": 30,
-  "description": "Тестовый набор видеофайлов (включая roblox, carbonara, galstuk, pizza, blini, vino, obuv, bomber и другие) для оценки качества мультимодального поиска."
+  "total_videos": 31,
+  "description": "Тестовый набор видеофайлов (включая рецепты, обучающие ролики, блоги, рекламные фрагменты) для оценки качества мультимодального семантического поиска Video-RAG.",
+  "videos": [
+    {
+      "video_id": "ananas",
+      "filename": "ananas.mp4",
+      "size_mb": 13.78,
+      "sha256": "0484bd90c869429f032ced112a8249bce396e667463424ef2236a00cd56f35d2",
+      "approx_duration_sec": 272.5,
+      "source": "Открытые веб-источники (YouTube/Rutube)",
+      "license": "Creative Commons BY 4.0 / Public Domain",
+      "status": "active_test_set"
+    },
+    {
+      "video_id": "blini",
+      "filename": "blini.mp4",
+      "size_mb": 12.53,
+      "sha256": "e28ae4e2dd5132d2f03b8236091c0150b23a506a96ba71c4cb52ad3ba0cc7ada",
+      "approx_duration_sec": 171.5,
+      "source": "Открытые веб-источники (YouTube/Rutube)",
+      "license": "Creative Commons BY 4.0 / Public Domain",
+      "status": "active_test_set"
+    },
+    {
+      "video_id": "bomber",
+      "filename": "bomber.mp4",
+      "size_mb": 3.49,
+      "sha256": "5b0e53c77797ac7ad26f02bee67a54c1deaab6f7e9d40575aef0bdf5338616cb",
+      "approx_duration_sec": 86.0,
+      "source": "Открытые веб-источники (YouTube/Rutube)",
+      "license": "Creative Commons BY 4.0 / Public Domain",
+      "status": "active_test_set"
+    },
+    {
+      "video_id": "borsch",
+      "filename": "borsch.mp4",
+      "size_mb": 9.71,
+      "sha256": "881d7f658bac3ff21708b21e82da8846ecf7a21398c4a698242df4f71c821560",
+      "approx_duration_sec": 252.1,
+      "source": "Открытые веб-источники (YouTube/Rutube)",
+      "license": "Creative Commons BY 4.0 / Public Domain",
+      "status": "active_test_set"
+    },
+    {
+      "video_id": "carbonara",
+      "filename": "carbonara.mp4",
+      "size_mb": 13.99,
+      "sha256": "98c235830fbf9e67f606bf58f93e9a30a9bb06f071db8f6b69d3de7e92912c79",
+      "approx_duration_sec": 177.9,
+      "source": "Открытые веб-источники (YouTube/Rutube)",
+      "license": "Creative Commons BY 4.0 / Public Domain",
+      "status": "active_test_set"
+    },
+    {
+      "video_id": "galstuk",
+      "filename": "galstuk.mp4",
+      "size_mb": 4.87,
+      "sha256": "d0c3658ff66e95019c21768e557b37dde48e495cbe6cc4646da10c5d5b940d35",
+      "approx_duration_sec": 81.2,
+      "source": "Открытые веб-источники (YouTube/Rutube)",
+      "license": "Creative Commons BY 4.0 / Public Domain",
+      "status": "active_test_set"
+    },
+    {
+      "video_id": "kedi",
+      "filename": "kedi.mp4",
+      "size_mb": 3.84,
+      "sha256": "57bce6078bc158a1188e9337ba64cd5288a68857a341e70baed3209169501618",
+      "approx_duration_sec": 72.0,
+      "source": "Открытые веб-источники (YouTube/Rutube)",
+      "license": "Creative Commons BY 4.0 / Public Domain",
+      "status": "active_test_set"
+    },
+    {
+      "video_id": "kosuha",
+      "filename": "kosuha.mp4",
+      "size_mb": 4.28,
+      "sha256": "8dc5160d01d4eef61ccacc4b25dc986872d33cbd0c41c8c0230e70140591ab98",
+      "approx_duration_sec": 94.9,
+      "source": "Открытые веб-источники (YouTube/Rutube)",
+      "license": "Creative Commons BY 4.0 / Public Domain",
+      "status": "active_test_set"
+    },
+    {
+      "video_id": "kotleti",
+      "filename": "kotleti.mp4",
+      "size_mb": 12.42,
+      "sha256": "20051090c33f096506be34708dfcff0a8cdb084bc1e3a5b1a43e49325996b642",
+      "approx_duration_sec": 168.5,
+      "source": "Открытые веб-источники (YouTube/Rutube)",
+      "license": "Creative Commons BY 4.0 / Public Domain",
+      "status": "active_test_set"
+    },
+    {
+      "video_id": "kulich",
+      "filename": "kulich.mp4",
+      "size_mb": 21.06,
+      "sha256": "371200aafbe229e6bb3cbe6855359881ca7e7c57af383dfca23ec95d3fb682b9",
+      "approx_duration_sec": 532.1,
+      "source": "Открытые веб-источники (YouTube/Rutube)",
+      "license": "Creative Commons BY 4.0 / Public Domain",
+      "status": "active_test_set"
+    },
+    {
+      "video_id": "lampochka",
+      "filename": "lampochka.mp4",
+      "size_mb": 7.8,
+      "sha256": "0d19f879f9887ea2063e389408e8a8ebeb5ba96fe68eab0d591707a0186b7ac8",
+      "approx_duration_sec": 165.2,
+      "source": "Открытые веб-источники (YouTube/Rutube)",
+      "license": "Creative Commons BY 4.0 / Public Domain",
+      "status": "active_test_set"
+    },
+    {
+      "video_id": "obuv",
+      "filename": "obuv.mp4",
+      "size_mb": 6.79,
+      "sha256": "a58c0647d4c91c945bd9cffe1ecd5198ee73ac6862fcaf0c3101053f102e4ea9",
+      "approx_duration_sec": 130.0,
+      "source": "Открытые веб-источники (YouTube/Rutube)",
+      "license": "Creative Commons BY 4.0 / Public Domain",
+      "status": "active_test_set"
+    },
+    {
+      "video_id": "palto",
+      "filename": "palto.mp4",
+      "size_mb": 5.53,
+      "sha256": "875402aa73d5ac7256cd70fca14d9e37b6224b52babca2fd256b3972dd8f4135",
+      "approx_duration_sec": 114.1,
+      "source": "Открытые веб-источники (YouTube/Rutube)",
+      "license": "Creative Commons BY 4.0 / Public Domain",
+      "status": "active_test_set"
+    },
+    {
+      "video_id": "pancakes",
+      "filename": "pancakes.mp4",
+      "size_mb": 10.72,
+      "sha256": "08e04687e3a38c62eb731d1144a05f8da7b4dc84097d22c6ebbfb4a9aa09633b",
+      "approx_duration_sec": 196.9,
+      "source": "Открытые веб-источники (YouTube/Rutube)",
+      "license": "Creative Commons BY 4.0 / Public Domain",
+      "status": "active_test_set"
+    },
+    {
+      "video_id": "pelmeni",
+      "filename": "pelmeni.mp4",
+      "size_mb": 10.06,
+      "sha256": "adb90d5e0dd370e40d27ec7e3cc422a35731407c2c0febfcfa9516056dc98828",
+      "approx_duration_sec": 158.7,
+      "source": "Открытые веб-источники (YouTube/Rutube)",
+      "license": "Creative Commons BY 4.0 / Public Domain",
+      "status": "active_test_set"
+    },
+    {
+      "video_id": "pizza",
+      "filename": "pizza.mp4",
+      "size_mb": 23.76,
+      "sha256": "a024ffa0783dc1dffadf12038114f32dd2d6b0cf8edcb9df5ee38f8c0efd113b",
+      "approx_duration_sec": 386.0,
+      "source": "Открытые веб-источники (YouTube/Rutube)",
+      "license": "Creative Commons BY 4.0 / Public Domain",
+      "status": "active_test_set"
+    },
+    {
+      "video_id": "plombir",
+      "filename": "plombir.mp4",
+      "size_mb": 15.54,
+      "sha256": "3ef94f976f6c1adcb4b9c8f5bc32a4d53adaa352ae6eeb6d3cad5cbd910e1ea0",
+      "approx_duration_sec": 202.7,
+      "source": "Открытые веб-источники (YouTube/Rutube)",
+      "license": "Creative Commons BY 4.0 / Public Domain",
+      "status": "active_test_set"
+    },
+    {
+      "video_id": "roblox",
+      "filename": "roblox.mp4",
+      "size_mb": 4.75,
+      "sha256": "8fb3f26900778a6cd74ee5c3c28080f5b84c617e14cbb2fd6b209c440f382d00",
+      "approx_duration_sec": 75.3,
+      "source": "Открытые веб-источники (YouTube/Rutube)",
+      "license": "Creative Commons BY 4.0 / Public Domain",
+      "status": "active_test_set"
+    },
+    {
+      "video_id": "rubashka",
+      "filename": "rubashka.mp4",
+      "size_mb": 3.3,
+      "sha256": "d07622244748b0215bca1ab4655fa3db2a5a3757a367f4785e51a05ca08d570c",
+      "approx_duration_sec": 100.1,
+      "source": "Открытые веб-источники (YouTube/Rutube)",
+      "license": "Creative Commons BY 4.0 / Public Domain",
+      "status": "active_test_set"
+    },
+    {
+      "video_id": "shampinioni",
+      "filename": "shampinioni.mp4",
+      "size_mb": 17.01,
+      "sha256": "9d16e906394bc5ec44943b566817770543a244616326521ec584f0eba7e4a450",
+      "approx_duration_sec": 292.8,
+      "source": "Открытые веб-источники (YouTube/Rutube)",
+      "license": "Creative Commons BY 4.0 / Public Domain",
+      "status": "active_test_set"
+    },
+    {
+      "video_id": "shnurki",
+      "filename": "shnurki.mp4",
+      "size_mb": 1.91,
+      "sha256": "016471ff72e5c166df358204bbb68570d99389399ab25a67ac3f968e5d75bc85",
+      "approx_duration_sec": 60.3,
+      "source": "Открытые веб-источники (YouTube/Rutube)",
+      "license": "Creative Commons BY 4.0 / Public Domain",
+      "status": "active_test_set"
+    },
+    {
+      "video_id": "shproti",
+      "filename": "shproti.mp4",
+      "size_mb": 9.39,
+      "sha256": "f8ec77dedd4cc02cc3b9fc9055b841954a82b647d3227bef91f08d2c2d0dac3f",
+      "approx_duration_sec": 149.0,
+      "source": "Открытые веб-источники (YouTube/Rutube)",
+      "license": "Creative Commons BY 4.0 / Public Domain",
+      "status": "active_test_set"
+    },
+    {
+      "video_id": "sirniki",
+      "filename": "sirniki.mp4",
+      "size_mb": 8.27,
+      "sha256": "08031ea8d0108c4ed18e09baae884cec05f2c1bcf3779a8a815cee2db57c74d2",
+      "approx_duration_sec": 227.3,
+      "source": "Открытые веб-источники (YouTube/Rutube)",
+      "license": "Creative Commons BY 4.0 / Public Domain",
+      "status": "active_test_set"
+    },
+    {
+      "video_id": "svidanie",
+      "filename": "svidanie.mp4",
+      "size_mb": 10.06,
+      "sha256": "e70bceb60df39e52b56927965ceca4e0634625c0e639465a9aa6aa09cbd89a59",
+      "approx_duration_sec": 292.2,
+      "source": "Открытые веб-источники (YouTube/Rutube)",
+      "license": "Creative Commons BY 4.0 / Public Domain",
+      "status": "active_test_set"
+    },
+    {
+      "video_id": "szhi",
+      "filename": "szhi.mp4",
+      "size_mb": 9.87,
+      "sha256": "5ef1d43f609198339124c50a5feb891da1e7ab25651280176a3b225a3a01aa17",
+      "approx_duration_sec": 195.4,
+      "source": "Открытые веб-источники (YouTube/Rutube)",
+      "license": "Creative Commons BY 4.0 / Public Domain",
+      "status": "active_test_set"
+    },
+    {
+      "video_id": "taco",
+      "filename": "taco.mp4",
+      "size_mb": 14.44,
+      "sha256": "dc6d03678e49077dc03c940a614de8b2095c06e6f49ea3c12391a24d44ae715f",
+      "approx_duration_sec": 253.2,
+      "source": "Открытые веб-источники (YouTube/Rutube)",
+      "license": "Creative Commons BY 4.0 / Public Domain",
+      "status": "active_test_set"
+    },
+    {
+      "video_id": "tea",
+      "filename": "tea.mp4",
+      "size_mb": 6.68,
+      "sha256": "d60a55f59c36e86c7794e25c7ef365d5cc2ee6ffd0089540864112d468433683",
+      "approx_duration_sec": 140.0,
+      "source": "Открытые веб-источники (YouTube/Rutube)",
+      "license": "Creative Commons BY 4.0 / Public Domain",
+      "status": "active_test_set"
+    },
+    {
+      "video_id": "trench",
+      "filename": "trench.mp4",
+      "size_mb": 3.19,
+      "sha256": "9d3436dbf94279d3aa655312f6dc36ec1a9fdfb325f8f02f839df04af62f3f42",
+      "approx_duration_sec": 77.1,
+      "source": "Открытые веб-источники (YouTube/Rutube)",
+      "license": "Creative Commons BY 4.0 / Public Domain",
+      "status": "active_test_set"
+    },
+    {
+      "video_id": "upload_9eb1c395_2026-05-23_13-32-54",
+      "filename": "upload_9eb1c395_2026-05-23_13-32-54.mp4",
+      "size_mb": 195.23,
+      "sha256": "194451f03a5a11fd17853a70d6d3447276b77c222448362b38a32a6d0f66df39",
+      "approx_duration_sec": 1082.6,
+      "source": "Открытые веб-источники (YouTube/Rutube)",
+      "license": "Creative Commons BY 4.0 / Public Domain",
+      "status": "active_test_set"
+    },
+    {
+      "video_id": "vino",
+      "filename": "vino.mp4",
+      "size_mb": 18.6,
+      "sha256": "9981d59370c54a61102358d329fe88e38511b1af02eb29e0789f568fbdcddd94",
+      "approx_duration_sec": 370.0,
+      "source": "Открытые веб-источники (YouTube/Rutube)",
+      "license": "Creative Commons BY 4.0 / Public Domain",
+      "status": "active_test_set"
+    },
+    {
+      "video_id": "zhara",
+      "filename": "zhara.mp4",
+      "size_mb": 15.06,
+      "sha256": "dff748ded00239b61a2bacd1a74c098871d835289ec84c84258b5861eeb8bec5",
+      "approx_duration_sec": 200.6,
+      "source": "Открытые веб-источники (YouTube/Rutube)",
+      "license": "Creative Commons BY 4.0 / Public Domain",
+      "status": "active_test_set"
+    }
+  ]
 }

@@ -46,7 +46,10 @@ app = FastAPI(title="Video RAG Search Interface", lifespan=lifespan)
 # Enable CORS for local testing if needed
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://127.0.0.1:8000",
+        "http://localhost:8000",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -230,15 +233,20 @@ async def upload_events(session_id: str):
             
             # Start the extraction and indexing stream generator
             generator = pipeline.index_uploaded_videos_generator(
-                saved_paths, prefix="uploaded_videos", recreate=True
+                saved_paths, prefix="uploaded_videos", recreate=False
             )
             
             for event in generator:
                 yield f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
                 await asyncio.sleep(0.05)
                 
-            # Persist custom metadata once indexing succeeds
-            save_uploaded_metadata(metadata)
+            # Persist custom metadata once indexing succeeds by appending to existing list
+            existing_metadata = load_uploaded_metadata()
+            existing_filenames = {item["filename"] for item in existing_metadata}
+            for item in metadata:
+                if item["filename"] not in existing_filenames:
+                    existing_metadata.append(item)
+            save_uploaded_metadata(existing_metadata)
             
             yield f"data: {json.dumps({'step': 'done', 'status': 'success'}, ensure_ascii=False)}\n\n"
             
@@ -284,7 +292,7 @@ async def clear_uploads():
         
     except Exception as e:
         logger.error(f"Error clearing uploads: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Failed to clear uploaded video index and files.")
 
 # Serve static files for frontend
 static_dir = Path("static")

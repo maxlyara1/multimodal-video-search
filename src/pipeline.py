@@ -393,7 +393,7 @@ class VideoRAGPipeline:
         self,
         video_paths: list[Path | str],
         prefix: str = "uploaded_videos",
-        recreate: bool = True,
+        recreate: bool = False,
     ) -> dict[str, int]:
         resolved_paths = [Path(p).resolve() for p in video_paths]
         modalities = self.enabled_modalities()
@@ -438,7 +438,7 @@ class VideoRAGPipeline:
         self,
         video_paths: list[Path | str],
         prefix: str = "uploaded_videos",
-        recreate: bool = True,
+        recreate: bool = False,
     ):
         import queue
         import threading
@@ -804,7 +804,7 @@ class VideoRAGPipeline:
                         modality_best_rrf[hit.modality] = rrf_val
                 candidate.score = sum(modality_best_rrf.values())
 
-            elif fusion_method == "max_norm":
+            elif fusion_method == "max_per_modality":
                 # Max-per-modality: сумма максимальных сырых оценок, взвешенных
                 modality_best_score = {}
                 for hit in candidate.hits:

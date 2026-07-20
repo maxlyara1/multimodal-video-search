@@ -28,8 +28,8 @@ def main() -> None:
         print()
         print("Query decomposition:")
         print(f"  asr_query: {decomposition.asr_query}")
-        print(f"  det_queries: {decomposition.det_queries}")
-        print(f"  det_mode: {decomposition.det_mode}")
+        print(f"  visual_queries: {decomposition.visual_queries}")
+        print(f"  visual_mode: {decomposition.visual_mode}")
         print()
 
         for index, candidate in enumerate(candidates, start=1):

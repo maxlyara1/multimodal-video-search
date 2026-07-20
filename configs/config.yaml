@@ -54,7 +54,7 @@ visual:
   model: Salesforce/blip-image-captioning-base
   frame_step_sec: 5.0
   max_new_tokens: 60
-  # BLIP генерирует английские описания кадров; spaCy используется только для visual scene graph.
+  # BLIP генерирует английские описания кадров; spaCy используется только для извлечения сущностей.
   spacy_model: en_core_web_sm
 
 indexing:
@@ -75,7 +75,7 @@ search:
   final_top_k: 5
   merge_gap_sec: 6.0
   score_threshold: 0.3
-  # Max-per-Modality выбран как текущая демонстрационная конфигурация по результатам development-бенчмарка
+  # Max-per-Modality выбран как текущая демонстрационная конфигурация по результатам оценки качества
   fusion_method: max_per_modality
   rrf_k: 60
   modality_weights:

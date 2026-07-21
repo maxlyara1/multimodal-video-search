@@ -2,26 +2,26 @@
   "asr_only": {
     "hit_at_1": 0.66,
     "hit_at_3": 0.8,
-    "latency": 0.30164309342158957
+    "latency": 0.2855019666044973
   },
   "multimodal_sum": {
     "hit_at_1": 0.7,
     "hit_at_3": 0.94,
-    "latency": 0.43524369252379985
+    "latency": 0.4063980816397816
   },
   "multimodal_rrf": {
     "hit_at_1": 0.88,
     "hit_at_3": 0.94,
-    "latency": 0.45040474164765326
+    "latency": 0.4007714891526848
   },
   "multimodal_max": {
     "hit_at_1": 0.9,
     "hit_at_3": 0.96,
-    "latency": 0.46187138329492883
+    "latency": 0.4155134491529316
   },
   "multimodal_max_norouting": {
     "hit_at_1": 0.76,
     "hit_at_3": 0.88,
-    "latency": 0.7769122049934231
+    "latency": 0.6589534183591604
   }
 }

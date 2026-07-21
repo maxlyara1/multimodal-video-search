@@ -225,7 +225,7 @@ def main() -> None:
     tasks_path = Path(args.tasks)
     if not tasks_path.exists():
         print(f"Ошибка: Файл запросов {tasks_path} не найден.")
-        return
+        raise SystemExit(1)
 
     with tasks_path.open("r", encoding="utf-8") as f:
         tasks = json.load(f)

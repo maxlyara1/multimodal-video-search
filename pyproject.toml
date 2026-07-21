@@ -6,7 +6,7 @@ readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
 authors = [
-    { name = "Maksim Lyara", email = "maxlyara1@yandex.ru" }
+    { name = "Maksim Lyara", email = "maks.lyara@gmail.com" }
 ]
 dependencies = [
     "fastapi>=0.110.0",

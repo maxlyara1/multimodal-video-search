@@ -215,7 +215,7 @@ def run_evaluation(pipeline: VideoRAGPipeline, mode: str, fusion_method: str, ta
 
 
 def main() -> None:
-    os.environ.setdefault("EMBEDDING_BACKEND", "local")
+    os.environ["EMBEDDING_BACKEND"] = "local"
     parser = argparse.ArgumentParser(description="Оценка качества для сравнения ASR-only и гибридного мультимодального поиска с RRF и объединением по максимуму")
     parser.add_argument("--config", default="configs/config.yaml")
     parser.add_argument("--tasks", default="benchmark/tasks.json")
@@ -256,11 +256,12 @@ def main() -> None:
     finally:
         temp_pipeline.close()
 
-    # 2. Warm-up
+    # 2. Warm-up (без обращения к Gemini)
     print("Прогрев моделей...")
     pipeline = VideoRAGPipeline(args.config)
     try:
-        pipeline.search("тест")
+        warmup_decomp = QueryDecomposition(original_query="тест", asr_query="тест", visual_queries=[], visual_mode="all")
+        pipeline.retrieve_with_decomposition("тест", warmup_decomp)
     finally:
         pipeline.close()
 

@@ -374,14 +374,18 @@ class VideoRAGPipeline:
 
         store = self._get_store()
         embedder = self._get_embedder()
-        for modality, records in all_records.items():
+
+        from concurrent.futures import ThreadPoolExecutor
+
+        def _index_modality(item: tuple[str, list[ModalityRecord]]) -> tuple[str, int]:
+            modality, records = item
             if recreate:
                 store.recreate_collection(modality)
             if not records:
                 logger.info("  [%s] 0 записей — пропуск", modality.upper())
-                continue
+                return modality, 0
             t_emb = time.perf_counter()
-            logger.info("  [%s] эмбеддинг %d записей...", modality.upper(), len(records))
+            logger.info("  [%s] параллельный эмбеддинг и запись %d записей...", modality.upper(), len(records))
             embeddings = embedder.embed(
                 [record.text for record in records],
                 batch_size=self.cfg["indexing"].get("batch_size", 8),
@@ -391,11 +395,15 @@ class VideoRAGPipeline:
                 "  [%s] готово за %s",
                 modality.upper(), _fmt_elapsed(time.perf_counter() - t_emb),
             )
+            return modality, len(records)
+
+        with ThreadPoolExecutor(max_workers=min(len(all_records), 3)) as executor:
+            indexed_results = dict(executor.map(_index_modality, all_records.items()))
 
         logger.info(
             "Этап 2/2 завершён за %s", _fmt_elapsed(time.perf_counter() - t_stage2),
         )
-        return {modality: len(records) for modality, records in all_records.items()}
+        return indexed_results
 
     def index_uploaded_videos(
         self,
@@ -425,22 +433,29 @@ class VideoRAGPipeline:
         store = self._get_store()
         embedder = self._get_embedder()
 
-        for modality, records in all_records.items():
+        from concurrent.futures import ThreadPoolExecutor
+
+        def _index_uploaded_modality(item: tuple[str, list[ModalityRecord]]) -> tuple[str, int]:
+            modality, records = item
             if recreate:
                 store.recreate_collection(modality, prefix=prefix)
             if not records:
                 logger.info("  [%s] 0 records to index", modality.upper())
-                continue
+                return modality, 0
 
-            logger.info("  [%s] embedding %d records for collection %s...", modality.upper(), len(records), prefix)
+            logger.info("  [%s] параллельный эмбеддинг %d записей для %s...", modality.upper(), len(records), prefix)
             embeddings = embedder.embed(
                 [record.text for record in records],
                 batch_size=self.cfg["indexing"].get("batch_size", 8),
             )
             store.upsert_records(modality, records, embeddings, prefix=prefix)
             logger.info("  [%s] upload done", modality.upper())
+            return modality, len(records)
 
-        return {modality: len(records) for modality, records in all_records.items()}
+        with ThreadPoolExecutor(max_workers=min(len(all_records), 3)) as executor:
+            indexed_results = dict(executor.map(_index_uploaded_modality, all_records.items()))
+
+        return indexed_results
 
     def index_uploaded_videos_generator(
         self,

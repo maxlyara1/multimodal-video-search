@@ -54,7 +54,7 @@ visual:
   model: Salesforce/blip-image-captioning-base
   frame_step_sec: 5.0
   max_new_tokens: 60
-  # BLIP генерирует английские описания кадров; spaCy используется только для извлечения сущностей.
+  # BLIP генерирует английские описания кадров; spaCy выделяет упомянутые объекты и синтаксические связи.
   spacy_model: en_core_web_sm
 
 indexing:

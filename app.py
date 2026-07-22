@@ -94,6 +94,9 @@ async def ask_query(request: QueryRequest):
             decomposition, candidates = await asyncio.to_thread(
                 pipeline.search, request.query, request.collection_prefix
             )
+            answer = ""
+            model_name = "fallback-search-only"
+            key_index = None
         # If LLM generation fell back or API key is missing, build rich structured answer from top candidate hits
         if model_name == "fallback-search-only" or "векторной базе" in answer:
             if candidates:

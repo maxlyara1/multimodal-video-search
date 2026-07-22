@@ -1,7 +1,8 @@
-from __future__ import annotations
-
 import sys
 from pathlib import Path
+
+# Add project root to sys.path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from src.pipeline import VideoRAGPipeline
 
@@ -22,9 +23,8 @@ def run_integration_test() -> None:
         videos = pipeline.list_prepared_videos()
         print(f"Найдено подготовленных видео: {len(videos)}")
         if len(videos) == 0:
-            print("Информация: Исходные видеофайлы MP4 не хранятся в git-репозитории.")
-            print("Извлеченные признаки (ASR/OCR/Visual) готовы в data/artifacts/.")
-            print("=== Integration Test (Features & Config Check): PASSED ===")
+            print("Integration test SKIPPED: source videos and built Qdrant index are not included in open repository.")
+            print("Pre-extracted features (ASR/OCR/Visual) remain available in data/artifacts/.")
             sys.exit(0)
 
         print("Выполнение тестового поиска по индексу Qdrant...")

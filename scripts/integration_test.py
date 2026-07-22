@@ -1,8 +1,9 @@
 import sys
 from pathlib import Path
 
-# Add project root to sys.path
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+ROOT_DIR = Path(__file__).resolve().parents[1]
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
 
 from src.pipeline import VideoRAGPipeline
 
@@ -10,13 +11,13 @@ from src.pipeline import VideoRAGPipeline
 def run_integration_test() -> None:
     print("=== Запуск Интеграционного теста Video-RAG Pipeline ===")
 
-    config_path = "configs/config.yaml"
-    if not Path(config_path).exists():
+    config_path = ROOT_DIR / "configs/config.yaml"
+    if not config_path.exists():
         print(f"Ошибка: Конфиг {config_path} не найден!")
         sys.exit(1)
 
     print("Инициализация пайплайна (требует загрузки локальных моделей)...")
-    pipeline = VideoRAGPipeline(config_path)
+    pipeline = VideoRAGPipeline(str(config_path))
 
     try:
         print("Проверка списка подготовленных видео...")

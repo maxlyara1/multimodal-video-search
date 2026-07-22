@@ -94,9 +94,33 @@ async def ask_query(request: QueryRequest):
             decomposition, candidates = await asyncio.to_thread(
                 pipeline.search, request.query, request.collection_prefix
             )
-            answer = "Внимание: Генерация текстового ответа недоступна (требуется настроить GOOGLE_API_KEY в файле .env). Ниже представлены результаты поиска по локальной векторной базе Qdrant."
-            model_name = "fallback-search-only"
-            key_index = None
+        # If LLM generation fell back or API key is missing, build rich structured answer from top candidate hits
+        if model_name == "fallback-search-only" or "векторной базе" in answer:
+            if candidates:
+                top_cand = candidates[0]
+                m_start = int(top_cand.start // 60)
+                s_start = int(top_cand.start % 60)
+                m_end = int(top_cand.end // 60)
+                s_end = int(top_cand.end % 60)
+                time_str = f"{m_start:02d}:{s_start:02d} — {m_end:02d}:{s_end:02d}"
+                seek_time_str = f"{m_start:02d}:{s_start:02d}"
+
+                asr_hits = [h for h in top_cand.hits if getattr(h, "modality", "").upper() == "ASR"]
+                ocr_hits = [h for h in top_cand.hits if getattr(h, "modality", "").upper() == "OCR"]
+                vis_hits = [h for h in top_cand.hits if getattr(h, "modality", "").upper() in ("VISUAL", "DET")]
+
+                answer_parts = [
+                    f"**Результаты векторного поиска**\n*Наиболее релевантный фрагмент локализован на таймкоде **{seek_time_str}** ({time_str}).*"
+                ]
+
+                if asr_hits:
+                    answer_parts.append(f"**🎙️ Речевая модальность (ASR Whisper Large-v3-Turbo):**\n«{asr_hits[0].text}»")
+                if ocr_hits:
+                    answer_parts.append(f"**🖥️ Текст на экране / слайде (OCR EasyOCR):**\n«{ocr_hits[0].text}»")
+                if vis_hits:
+                    answer_parts.append(f"**👁️ Визуальный контекст (BLIP Visual Embeddings):**\n«{vis_hits[0].text}»")
+
+                answer = "\n\n".join(answer_parts)
 
         # Serialize candidates for JSON response
         serialized_candidates = []

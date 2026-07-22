@@ -64,16 +64,24 @@ class VideoRAGPipeline:
             indexing_cfg = self.cfg["indexing"]
             backend = indexing_cfg.get("embedding_backend", "local")
             if backend == "tei":
-                from src.retrieval import TEIEmbedder
+                try:
+                    from src.retrieval import TEIEmbedder
 
-                self._embedder = TEIEmbedder(
-                    endpoint=indexing_cfg.get("tei_endpoint", "http://127.0.0.1:8080"),
-                    model_name=indexing_cfg["embedding_model"],
-                    dim=indexing_cfg.get("embedding_dim", 1024),
-                    timeout_sec=indexing_cfg.get("tei_timeout_sec", 120.0),
-                    query_instruction=indexing_cfg.get("query_instruction"),
-                )
-            elif backend == "local":
+                    tei = TEIEmbedder(
+                        endpoint=indexing_cfg.get("tei_endpoint", "http://127.0.0.1:8080"),
+                        model_name=indexing_cfg["embedding_model"],
+                        dim=indexing_cfg.get("embedding_dim", 1024),
+                        timeout_sec=indexing_cfg.get("tei_timeout_sec", 5.0),
+                        query_instruction=indexing_cfg.get("query_instruction"),
+                    )
+                    # Quick connectivity check
+                    tei.embed_query("ping")
+                    self._embedder = tei
+                except Exception as e:
+                    logger.warning("TEI endpoint '%s' unreachable or error (%s). Falling back to local Embedder.", indexing_cfg.get("tei_endpoint"), e)
+                    backend = "local"
+
+            if backend == "local":
                 from src.retrieval import Embedder
 
                 self._embedder = Embedder(
@@ -84,7 +92,7 @@ class VideoRAGPipeline:
                     query_instruction=indexing_cfg.get("query_instruction"),
                     output_dim=indexing_cfg.get("embedding_dim"),
                 )
-            else:
+            elif backend != "tei":
                 raise ValueError(f"Unknown indexing.embedding_backend: {backend}")
         return self._embedder
 
@@ -671,13 +679,20 @@ class VideoRAGPipeline:
 
     def answer(self, query: str, collection_prefix: str | None = None) -> tuple[QueryDecomposition, list[CandidateWindow], str, str | None, int | None]:
         decomposition, candidates = self.search(query, collection_prefix=collection_prefix)
-        generator = self._get_answer_generator()
-        answer, model_name, key_index = generator.generate(
-            query=query,
-            decomposition=decomposition,
-            candidates=candidates,
-        )
-        return decomposition, candidates, answer, model_name, key_index
+        try:
+            generator = self._get_answer_generator()
+            if generator:
+                answer, model_name, key_index = generator.generate(
+                    query=query,
+                    decomposition=decomposition,
+                    candidates=candidates,
+                )
+                return decomposition, candidates, answer, model_name, key_index
+        except Exception as e:
+            logger.warning("Answer generation failed (%s). Returning search candidates with fallback message.", e)
+
+        fallback_msg = "Результаты найдены в векторной базе данных. Ниже представлены наиболее релевантные фрагменты видеозаписи."
+        return decomposition, candidates, fallback_msg, "fallback-search-only", None
 
     def _build_visual_query(self, decomposition: QueryDecomposition) -> str:
         queries = getattr(decomposition, "visual_queries", getattr(decomposition, "det_queries", []))
